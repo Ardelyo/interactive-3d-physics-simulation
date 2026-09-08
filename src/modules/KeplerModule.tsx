@@ -8,6 +8,7 @@ import { Panel, StatCard } from "../components/ui/Panel";
 import { FBlock, F } from "../components/ui/Formula";
 import { LiveChart } from "../components/ui/LiveChart";
 import { Mascot } from "../components/ui/Mascot";
+import { StepCalculation } from "../components/ui/StepCalculation";
 import { Html, Trail } from "@react-three/drei";
 import { sound, triggerHaptic } from "../utils/audio";
 
@@ -213,7 +214,7 @@ export default function KeplerModule() {
   const [speedMul, setSpeedMul] = useState<number>(1);
   const [running, setRunning] = useState<boolean>(true);
   const [showSectors, setShowSectors] = useState<boolean>(true);
-  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
+  const [mobileTab, setMobileTab] = useState<"controls" | "calc" | "stats" | "theory">("controls");
 
   const vCirc = Math.sqrt(GM / R0);
   const state = useRef<OrbitState>({
@@ -375,11 +376,11 @@ export default function KeplerModule() {
       {/* Control & Telemetry (Mobile Tabbed, Desktop Multi-Column) */}
       <div className="lg:col-span-4 space-y-3">
         {/* Mobile Segmented Switcher */}
-        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs overflow-x-auto">
           <button
             type="button"
             onClick={() => setMobileTab("controls")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "controls"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
@@ -389,25 +390,36 @@ export default function KeplerModule() {
           </button>
           <button
             type="button"
+            onClick={() => setMobileTab("calc")}
+            className={`flex-1 min-w-[85px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "calc"
+                ? "bg-[#16A34A] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📝 Hitungan
+          </button>
+          <button
+            type="button"
             onClick={() => setMobileTab("stats")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "stats"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            📊 Data & Grafik
+            📊 Data
           </button>
           <button
             type="button"
             onClick={() => setMobileTab("theory")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "theory"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            🦉 Tips & Rumus
+            🦉 Tips
           </button>
         </div>
 
@@ -480,7 +492,47 @@ export default function KeplerModule() {
           </div>
         </div>
 
-        {/* Section 2: Stats & Charts */}
+        {/* Section 2: Step-by-Step Calculation */}
+        <div className={`${mobileTab === "calc" ? "block" : "hidden"} lg:block space-y-3`}>
+          <StepCalculation
+            diketahui={[
+              { symbol: "r", value: r.toFixed(2), unit: "AU", desc: "Jarak Sesaat Planet" },
+              { symbol: "v", value: speed.toFixed(2), unit: "AU/s", desc: "Kelajuan Orbital" },
+              { symbol: "GM", value: GM.toFixed(1), unit: "", desc: "Konstanta Gravitasi" },
+              { symbol: "L", value: L.toFixed(3), unit: "AU²/s", desc: "Momentum Sudut Spesifik" },
+            ]}
+            ditanya={{
+              symbol: "\\tau \\text{ & } \\dfrac{dA}{dt}",
+              desc: "Torsi Gravitasi & Kecepatan Luasan (Kepler II)",
+              unit: "N·m / AU²/s",
+            }}
+            langkah={[
+              {
+                step: "Buktikan Torsi Gravitasi Bernilai Nol (τ = 0)",
+                formula: "\\vec\\tau = \\vec r \\times \\vec F_g = r \\cdot F_g \\cdot \\sin(180^\\circ) = 0",
+                substitution: `\\tau = ${r.toFixed(2)} \\times F_g \\times 0 = 0`,
+                result: `\\tau = 0.000 N·m`,
+                explanation: "Gaya gravitasi matahari adalah gaya sentral yang selalu mengarah ke pusat Matahari (segaris dengan vektor posisi r).",
+              },
+              {
+                step: "Kekekalan Momentum Sudut Orbital",
+                formula: "\\dfrac{d\\vec L}{dt} = \\vec\\tau = 0 \\Rightarrow \\vec L = \\vec r \\times \\vec v = \\text{konstan}",
+                substitution: `L = |\\vec r \\times \\vec v| = ${L.toFixed(3)}`,
+                result: `L = ${L.toFixed(3)} AU²/s`,
+                explanation: "Karena r berubah sepanjang orbit elips, kelajuan v harus menyesuaikan agar perkalian r × v konstan!",
+              },
+              {
+                step: "Pembuktian Hukum II Kepler (Kecepatan Luas Tetap)",
+                formula: "\\dfrac{dA}{dt} = \\dfrac{1}{2} |\\vec r \\times \\vec v| = \\dfrac{L}{2m} = \\text{konstan}",
+                substitution: `\\dfrac{dA}{dt} = \\dfrac{${L.toFixed(3)}}{2} = ${(L / 2).toFixed(3)}`,
+                result: `\\dfrac{dA}{dt} = ${(L / 2).toFixed(3)} AU²/s (Konstan)`,
+                explanation: "Juring luasan yang disapu dalam selang waktu yang sama selalu memiliki luas yang sama persis!",
+              },
+            ]}
+          />
+        </div>
+
+        {/* Section 3: Stats & Charts */}
         <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
           <Panel title="Grafik Real-time (L Konstan)" icon="📈">
             <LiveChart

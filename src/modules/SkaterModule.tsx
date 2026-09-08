@@ -8,6 +8,7 @@ import { Panel, StatCard } from "../components/ui/Panel";
 import { FBlock, F } from "../components/ui/Formula";
 import { LiveChart } from "../components/ui/LiveChart";
 import { Mascot } from "../components/ui/Mascot";
+import { StepCalculation } from "../components/ui/StepCalculation";
 import { sound, triggerHaptic } from "../utils/audio";
 
 const BODY_I = 0.85; // kg·m² torso + head + legs
@@ -287,7 +288,7 @@ export default function SkaterModule() {
   const [omega0, setOmega0] = useState<number>(3.5);
   const [spinning, setSpinning] = useState<boolean>(false);
   const [friction, setFriction] = useState<boolean>(false);
-  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
+  const [mobileTab, setMobileTab] = useState<"controls" | "calc" | "stats" | "theory">("controls");
 
   const thetaRef = useRef<number>(0);
   const omegaRef = useRef<number>(0);
@@ -444,11 +445,11 @@ export default function SkaterModule() {
       {/* Controls & Telemetry (Mobile Tabbed, Desktop Multi-Column) */}
       <div className="lg:col-span-4 space-y-3">
         {/* Mobile Segmented Switcher */}
-        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs overflow-x-auto">
           <button
             type="button"
             onClick={() => setMobileTab("controls")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "controls"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
@@ -458,25 +459,36 @@ export default function SkaterModule() {
           </button>
           <button
             type="button"
+            onClick={() => setMobileTab("calc")}
+            className={`flex-1 min-w-[85px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "calc"
+                ? "bg-[#16A34A] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📝 Hitungan
+          </button>
+          <button
+            type="button"
             onClick={() => setMobileTab("stats")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "stats"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            📊 Data & Grafik
+            📊 Grafik
           </button>
           <button
             type="button"
             onClick={() => setMobileTab("theory")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "theory"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            🦉 Tips & Rumus
+            🦉 Tips
           </button>
         </div>
 
@@ -558,7 +570,47 @@ export default function SkaterModule() {
           </div>
         </div>
 
-        {/* Section 2: Stats & Charts */}
+        {/* Section 2: Step Calculation (Diketahui, Ditanya, Dijawab) */}
+        <div className={`${mobileTab === "calc" ? "block" : "hidden"} lg:block space-y-3`}>
+          <StepCalculation
+            diketahui={[
+              { symbol: "I_{\\text{badan}}", value: BODY_I.toFixed(2), unit: "kg·m²", desc: "Inersia Tubuh Dasar" },
+              { symbol: "m_{\\text{lengan}}", value: ARM_MASS.toFixed(1), unit: "kg", desc: "Massa Tiap Lengan" },
+              { symbol: "r", value: armRadius(extension).toFixed(2), unit: "m", desc: "Radius Lengan" },
+              { symbol: "L", value: LRef.current.toFixed(2), unit: "kg·m²/s", desc: "Momentum Sudut (Kekal)" },
+            ]}
+            ditanya={{
+              symbol: "\\omega",
+              desc: "Kecepatan Sudut Putaran Penari",
+              unit: "rad/s",
+            }}
+            langkah={[
+              {
+                step: "Hitung Momen Inersia Total Baru (I)",
+                formula: "I = I_{\\text{badan}} + 2 \\cdot m_{\\text{lengan}} \\cdot r^2",
+                substitution: `I = ${BODY_I} + 2 \\times ${ARM_MASS} \\times (${armRadius(extension).toFixed(2)})^2`,
+                result: `I = ${I.toFixed(3)} kg·m²`,
+                explanation: extension < 0.3 ? "Lengan rapat membuat distribusi massa mendekati sumbu putar (I mengecil drastis!)." : "Lengan terentang memperbesar jari-jari massa r sehingga I membesar.",
+              },
+              {
+                step: "Terapkan Hukum Kekekalan Momentum Sudut",
+                formula: "I_1 \\omega_1 = I_2 \\omega_2 \\Rightarrow \\omega_2 = \\dfrac{L}{I_2}",
+                substitution: `\\omega = \\dfrac{${LRef.current.toFixed(2)}}{${I.toFixed(3)}}`,
+                result: `\\omega = ${omegaRef.current.toFixed(2)} rad/s`,
+                explanation: "Karena torsi luar di atas es licin nol (τ = 0), momentum sudut L kekal abadi.",
+              },
+              {
+                step: "Hitung Energi Kinetik Rotasi (Ek)",
+                formula: "E_k = \\dfrac{1}{2} I \\omega^2 = \\dfrac{L^2}{2I}",
+                substitution: `E_k = 0.5 \\times ${I.toFixed(3)} \\times (${omegaRef.current.toFixed(2)})^2`,
+                result: `E_k = ${Ek.toFixed(1)} Joule`,
+                explanation: "Saat lengan ditarik rapat, Ek meningkat karena usaha internal otot penari melawan gaya sentrifugal!",
+              },
+            ]}
+          />
+        </div>
+
+        {/* Section 3: Stats & Charts */}
         <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
           <Panel title="Grafik Real-time (Kekekalan L)" icon="📈">
             <LiveChart
@@ -572,7 +624,7 @@ export default function SkaterModule() {
           </Panel>
         </div>
 
-        {/* Section 3: Theory & Mascot */}
+        {/* Section 4: Theory & Mascot */}
         <div className={`${mobileTab === "theory" ? "block" : "hidden"} lg:block space-y-3`}>
           <div className="lg:hidden">
             <Mascot

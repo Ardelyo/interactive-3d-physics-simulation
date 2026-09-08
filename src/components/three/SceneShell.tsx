@@ -23,7 +23,7 @@ export function SceneShell({
 }>) {
   return (
     <Canvas
-      shadows
+      shadows={{ type: THREE.PCFShadowMap }}
       dpr={[1, 2]}
       camera={{ position: camera.position, fov: camera.fov ?? 42 }}
       gl={{

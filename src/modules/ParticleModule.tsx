@@ -8,6 +8,7 @@ import { Panel, StatCard } from "../components/ui/Panel";
 import { FBlock, F } from "../components/ui/Formula";
 import { LiveChart } from "../components/ui/LiveChart";
 import { Mascot } from "../components/ui/Mascot";
+import { StepCalculation } from "../components/ui/StepCalculation";
 import { Billboard, Text } from "@react-three/drei";
 import { sound, triggerHaptic } from "../utils/audio";
 
@@ -274,7 +275,7 @@ export default function ParticleModule() {
   const [showL, setShowL] = useState<boolean>(true);
 
   // Mobile compact segmented tab
-  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
+  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "calc" | "theory">("controls");
 
   const thetaRef = useRef<number>(0);
   const [history, setHistory] = useState<{ L: number[]; v: number[] }>({ L: [], v: [] });
@@ -444,11 +445,11 @@ export default function ParticleModule() {
       {/* Control & Data Panel (Mobile Tabbed, Desktop Multi-Column) */}
       <div className="lg:col-span-5 flex flex-col gap-2.5">
         {/* Mobile Segmented Switcher (Visible only on mobile/tablet) */}
-        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs overflow-x-auto">
           <button
             type="button"
             onClick={() => setMobileTab("controls")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "controls"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
@@ -458,25 +459,36 @@ export default function ParticleModule() {
           </button>
           <button
             type="button"
+            onClick={() => setMobileTab("calc")}
+            className={`flex-1 min-w-[85px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "calc"
+                ? "bg-[#16A34A] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📝 Hitungan
+          </button>
+          <button
+            type="button"
             onClick={() => setMobileTab("stats")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "stats"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            📊 Grafik & Data
+            📊 Grafik
           </button>
           <button
             type="button"
             onClick={() => setMobileTab("theory")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "theory"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            🦉 Tips & Rumus
+            🦉 Tips
           </button>
         </div>
 
@@ -551,6 +563,46 @@ export default function ParticleModule() {
           </div>
         </div>
 
+        {/* Step-by-Step Calculation Section (Diketahui, Ditanya, Dijawab) */}
+        <div className={`${mobileTab === "calc" ? "block" : "hidden"} lg:block space-y-3`}>
+          <StepCalculation
+            diketahui={[
+              { symbol: "m", value: mass.toFixed(2), unit: "kg", desc: "Massa Partikel" },
+              { symbol: "r", value: radius.toFixed(2), unit: "m", desc: "Jari-jari Lintasan" },
+              { symbol: "\\omega", value: omegaMag.toFixed(2), unit: "rad/s", desc: "Kec. Sudut" },
+              { symbol: "\\text{Arah}", value: ccw ? "CCW" : "CW", unit: "", desc: "Arah Putar" },
+            ]}
+            ditanya={{
+              symbol: "\\vec L",
+              desc: "Besar & Arah Momentum Sudut Partikel",
+              unit: "kg·m²/s",
+            }}
+            langkah={[
+              {
+                step: "Hitung Kelajuan Linear Tangensial (v)",
+                formula: "v = \\omega \\cdot r",
+                substitution: `v = ${omegaMag.toFixed(2)} \\times ${radius.toFixed(2)}`,
+                result: `v = ${v.toFixed(2)} m/s`,
+                explanation: "Kecepatan linear partikel menyinggung lingkaran orbit.",
+              },
+              {
+                step: "Hitung Momen Inersia Partikel (I)",
+                formula: "I = m \\cdot r^2",
+                substitution: `I = ${mass.toFixed(2)} \\times (${radius.toFixed(2)})^2 = ${mass.toFixed(2)} \\times ${(radius * radius).toFixed(3)}`,
+                result: `I = ${I.toFixed(3)} kg·m²`,
+                explanation: "Momen inersia partikel titik berjarak r dari sumbu putar.",
+              },
+              {
+                step: "Hitung Besar & Arah Momentum Sudut (L)",
+                formula: "L = I \\cdot \\omega = m \\cdot r \\cdot v",
+                substitution: `L = ${I.toFixed(3)} \\times ${omegaMag.toFixed(2)}`,
+                result: `L = ${Math.abs(L).toFixed(2)} kg·m²/s`,
+                explanation: `Kaidah Tangan Kanan: 4 jari melingkar searah ${ccw ? "CCW" : "CW"} ➔ Jempol menunjuk ${ccw ? "Tegak ke ATAS (+Y)" : "Tegak ke BAWAH (-Y)"}.`,
+              },
+            ]}
+          />
+        </div>
+
         {/* Stats & Charts Section (Shown on desktop OR mobile tab === 'stats') */}
         <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
           <Panel title="Grafik Real-time (|L| & v)" icon="📈">
@@ -574,11 +626,11 @@ export default function ParticleModule() {
             />
           </div>
 
-          <Panel title="Substitusi Nilai Langsung" icon="📐">
+          <Panel title="Konsep Vektor Kaidah Tangan Kanan" icon="📐">
             <div className="space-y-1.5 text-xs text-slate-700">
               <FBlock
-                tex={`L = m \\cdot r^2 \\cdot \\omega = ${mass} \\times (${radius.toFixed(2)})^2 \\times ${omegaMag.toFixed(1)} = ${Math.abs(L).toFixed(2)}\\text{ kg}\\cdot\\text{m}^2/\\text{s}`}
-                label="Kalkulasi"
+                tex="\vec L = \vec r \times \vec p = m(\vec r \times \vec v)"
+                label="Vektor"
               />
               <p className="text-[11px] text-slate-500 font-medium">
                 Vektor <F tex="\vec L" /> tegak lurus bidang putaran sesuai aturan perkalian silang <F tex="\vec r \times \vec p" />.

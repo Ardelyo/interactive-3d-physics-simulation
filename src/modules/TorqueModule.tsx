@@ -8,6 +8,7 @@ import { Panel, StatCard } from "../components/ui/Panel";
 import { FBlock, F } from "../components/ui/Formula";
 import { LiveChart } from "../components/ui/LiveChart";
 import { Mascot } from "../components/ui/Mascot";
+import { StepCalculation } from "../components/ui/StepCalculation";
 import { Html } from "@react-three/drei";
 import { sound, triggerHaptic } from "../utils/audio";
 
@@ -213,7 +214,7 @@ export default function TorqueModule() {
   const [forceMag, setForceMag] = useState<number>(6);
   const [friction, setFriction] = useState<number>(0.12);
   const [forceOn, setForceOn] = useState<boolean>(false);
-  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
+  const [mobileTab, setMobileTab] = useState<"controls" | "calc" | "stats" | "theory">("controls");
 
   const phys = useRef<Physics>({ theta: 0, omega: 0 });
   const [tick, setTick] = useState<number>(0);
@@ -343,11 +344,11 @@ export default function TorqueModule() {
       {/* Control & Telemetry (Mobile Tabbed, Desktop Multi-Column) */}
       <div className="lg:col-span-4 space-y-3">
         {/* Mobile Segmented Switcher */}
-        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs overflow-x-auto">
           <button
             type="button"
             onClick={() => setMobileTab("controls")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "controls"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
@@ -357,25 +358,36 @@ export default function TorqueModule() {
           </button>
           <button
             type="button"
+            onClick={() => setMobileTab("calc")}
+            className={`flex-1 min-w-[85px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "calc"
+                ? "bg-[#16A34A] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📝 Hitungan
+          </button>
+          <button
+            type="button"
             onClick={() => setMobileTab("stats")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "stats"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            📊 Data & Grafik
+            📊 Grafik
           </button>
           <button
             type="button"
             onClick={() => setMobileTab("theory")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "theory"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            🦉 Tips & Rumus
+            🦉 Tips
           </button>
         </div>
 
@@ -469,7 +481,47 @@ export default function TorqueModule() {
           </div>
         </div>
 
-        {/* Section 2: Stats & Charts */}
+        {/* Section 2: Step-by-Step Calculation */}
+        <div className={`${mobileTab === "calc" ? "block" : "hidden"} lg:block space-y-3`}>
+          <StepCalculation
+            diketahui={[
+              { symbol: "M", value: mass.toFixed(1), unit: "kg", desc: "Massa Roda" },
+              { symbol: "R", value: wheelRadius.toFixed(2), unit: "m", desc: "Radius Roda" },
+              { symbol: "r", value: lever.toFixed(2), unit: "m", desc: "Lengan Torsi" },
+              { symbol: "F", value: forceOn ? forceMag.toFixed(1) : "0 (lepas)", unit: "N", desc: "Gaya Dorong" },
+            ]}
+            ditanya={{
+              symbol: "\\tau \\text{ & } \\Delta L",
+              desc: "Torsi & Perubahan Momentum Sudut",
+              unit: "N·m / kg·m²/s",
+            }}
+            langkah={[
+              {
+                step: "Hitung Momen Inersia Cakram Pejal (I)",
+                formula: "I = \\dfrac{1}{2} M R^2",
+                substitution: `I = 0.5 \\times ${mass.toFixed(1)} \\times (${wheelRadius.toFixed(2)})^2`,
+                result: `I = ${I.toFixed(3)} kg·m²`,
+                explanation: "Cakram silinder pejal homogen yang berputar terhadap sumbu simetrinya.",
+              },
+              {
+                step: "Hitung Momen Gaya (Torsi τ)",
+                formula: "\\tau = r \\times F",
+                substitution: `\\tau = ${lever.toFixed(2)} \\times ${forceOn ? forceMag.toFixed(1) : 0}`,
+                result: `\\tau = ${torque.toFixed(2)} N·m`,
+                explanation: forceOn ? "Gaya tangensial menghasilkan percepatan sudut α = τ/I." : "Tombol dilepas, τ = 0 sehingga momentum sudut L berhenti bertambah (kekal).",
+              },
+              {
+                step: "Hubungan Impuls Sudut & Momentum Sudut",
+                formula: "\\Delta L = \\tau \\cdot \\Delta t \\Rightarrow \\dfrac{\\Delta L}{\\Delta t} = \\tau",
+                substitution: `\\Delta L = ${torque.toFixed(2)} \\times \\Delta t`,
+                result: `L_{\\text{sekarang}} = ${L.toFixed(2)} kg·m²/s`,
+                explanation: "Hukum II Newton versi rotasi: Torsi adalah turunan pertama momentum sudut terhadap waktu.",
+              },
+            ]}
+          />
+        </div>
+
+        {/* Section 3: Stats & Charts */}
         <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
           <Panel title="Grafik Dinamika Rotasi" icon="📈">
             <LiveChart
@@ -483,7 +535,7 @@ export default function TorqueModule() {
           </Panel>
         </div>
 
-        {/* Section 3: Theory & Mascot */}
+        {/* Section 4: Theory & Mascot */}
         <div className={`${mobileTab === "theory" ? "block" : "hidden"} lg:block space-y-3`}>
           <div className="lg:hidden">
             <Mascot

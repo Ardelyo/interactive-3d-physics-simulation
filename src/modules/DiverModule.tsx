@@ -7,6 +7,7 @@ import { Panel, StatCard } from "../components/ui/Panel";
 import { FBlock, F } from "../components/ui/Formula";
 import { LiveChart } from "../components/ui/LiveChart";
 import { Mascot } from "../components/ui/Mascot";
+import { StepCalculation } from "../components/ui/StepCalculation";
 import { Html } from "@react-three/drei";
 import { sound, triggerHaptic } from "../utils/audio";
 import confetti from "canvas-confetti";
@@ -252,7 +253,7 @@ export default function DiverModule() {
   const [jumpPower, setJumpPower] = useState<number>(3.2);
   const [tuck, setTuck] = useState<number>(0.85);
   const [phase, setPhase] = useState<"ready" | "flying" | "entered">("ready");
-  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
+  const [mobileTab, setMobileTab] = useState<"controls" | "calc" | "stats" | "theory">("controls");
 
   const flight = useRef<FlightState>({ t: 0, x: 0.45, y: boardHeight, vy: 0, theta: 0 });
   const L = useRef<number>(0);
@@ -445,11 +446,11 @@ export default function DiverModule() {
       {/* Control & Telemetry (Mobile Tabbed, Desktop Multi-Column) */}
       <div className="lg:col-span-4 space-y-3">
         {/* Mobile Segmented Switcher */}
-        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs overflow-x-auto">
           <button
             type="button"
             onClick={() => setMobileTab("controls")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "controls"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
@@ -459,25 +460,36 @@ export default function DiverModule() {
           </button>
           <button
             type="button"
+            onClick={() => setMobileTab("calc")}
+            className={`flex-1 min-w-[85px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "calc"
+                ? "bg-[#16A34A] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📝 Hitungan
+          </button>
+          <button
+            type="button"
             onClick={() => setMobileTab("stats")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "stats"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            📊 Data & Grafik
+            📊 Data
           </button>
           <button
             type="button"
             onClick={() => setMobileTab("theory")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "theory"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            🦉 Tips & Rumus
+            🦉 Tips
           </button>
         </div>
 
@@ -559,7 +571,47 @@ export default function DiverModule() {
           </div>
         </div>
 
-        {/* Section 2: Stats & Charts */}
+        {/* Section 2: Step-by-Step Calculation */}
+        <div className={`${mobileTab === "calc" ? "block" : "hidden"} lg:block space-y-3`}>
+          <StepCalculation
+            diketahui={[
+              { symbol: "h", value: boardHeight.toFixed(1), unit: "m", desc: "Tinggi Menara" },
+              { symbol: "I_{\\text{lurus}}", value: I_EXT.toFixed(1), unit: "kg·m²", desc: "Inersia Posisi Lurus" },
+              { symbol: "I_{\\text{tuck}}", value: I_TUCK.toFixed(1), unit: "kg·m²", desc: "Inersia Posisi Meringkuk" },
+              { symbol: "\\text{tuck}", value: tuck.toFixed(2), unit: "", desc: "Tingkat Tekukan" },
+            ]}
+            ditanya={{
+              symbol: "\\omega \\text{ & } t_{\\text{terbang}}",
+              desc: "Kecepatan Putar Salto & Estimasi Jumlah Putaran Salto",
+              unit: "rad/s",
+            }}
+            langkah={[
+              {
+                step: "Hitung Inersia Sesaat Tubuh Atlet (I)",
+                formula: "I = I_{\\text{tuck}} + (I_{\\text{lurus}} - I_{\\text{tuck}})(1 - \\text{tuck})",
+                substitution: `I = ${I_TUCK} + (${I_EXT} - ${I_TUCK}) \\times (1 - ${tuck.toFixed(2)})`,
+                result: `I = ${I.toFixed(2)} kg·m²`,
+                explanation: tuck > 0.7 ? "Posisi meringkuk bulat (tuck) memangkas inersia hingga 75%!" : "Posisi merentang lurus memperbesar inersia untuk memperlambat putaran.",
+              },
+              {
+                step: "Hitung Kecepatan Sudut Putaran Salto (ω)",
+                formula: "\\omega = \\dfrac{L}{I}",
+                substitution: `\\omega = \\dfrac{${L.current.toFixed(2)}}{${I.toFixed(2)}}`,
+                result: `\\omega = ${omegaNow.toFixed(2)} rad/s`,
+                explanation: "Di udara bebas hambatan, torsi luar nol (τ = 0) sehingga L konstan sepanjang melayang.",
+              },
+              {
+                step: "Hitung Waktu Jatuh & Estimasi Jumlah Putaran Salto",
+                formula: "t_{\\text{terbang}} \\approx \\sqrt{\\dfrac{2h}{g}} ,\\quad N = \\dfrac{\\omega \\cdot t}{2\\pi}",
+                substitution: `t \\approx \\sqrt{\\dfrac{2 \\times ${boardHeight.toFixed(1)}}{${G}}} = ${Math.sqrt(2 * boardHeight / G).toFixed(2)}\\text{ s}`,
+                result: `Jumlah Salto N \\approx ${((omegaNow * Math.sqrt(2 * boardHeight / G)) / (2 * Math.PI)).toFixed(1)} putaran`,
+                explanation: "Sebelum masuk air, atlet meluruskan tubuh (tuck ➔ 0) agar putaran melambat tepat tegak lurus!",
+              },
+            ]}
+          />
+        </div>
+
+        {/* Section 3: Stats & Charts */}
         <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
           <Panel title="Grafik Dinamika di Udara" icon="📈">
             <LiveChart

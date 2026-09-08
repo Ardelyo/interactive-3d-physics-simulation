@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { Billboard, Text } from "@react-three/drei";
 import { SceneShell } from "../components/three/SceneShell";
 import { Arrow3D } from "../components/three/Arrow3D";
 import { Slider } from "../components/ui/Slider";
 import { Panel, StatCard } from "../components/ui/Panel";
 import { FBlock, F } from "../components/ui/Formula";
 import { Mascot } from "../components/ui/Mascot";
+import { StepCalculation } from "../components/ui/StepCalculation";
 import { sound, triggerHaptic } from "../utils/audio";
 
 function BicycleWheel3D({
@@ -354,7 +356,7 @@ export default function GyroscopeModule() {
   const [tiltAngle, setTiltAngle] = useState<number>(0); // 0 = UP, 90 = Horiz, 180 = DOWN
   const [wheelMass, setWheelMass] = useState<number>(3.0); // kg
   const [wheelRadius] = useState<number>(0.35); // m
-  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
+  const [mobileTab, setMobileTab] = useState<"controls" | "calc" | "stats" | "theory">("controls");
 
   const spinAngleRef = useRef(0);
   const chairAngleRef = useRef(0);
@@ -503,11 +505,11 @@ export default function GyroscopeModule() {
       {/* Control & Telemetry Panel (Mobile Tabbed, Desktop Multi-Column) */}
       <div className="lg:col-span-4 space-y-3">
         {/* Mobile Segmented Switcher */}
-        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs overflow-x-auto">
           <button
             type="button"
             onClick={() => setMobileTab("controls")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "controls"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
@@ -517,25 +519,36 @@ export default function GyroscopeModule() {
           </button>
           <button
             type="button"
+            onClick={() => setMobileTab("calc")}
+            className={`flex-1 min-w-[85px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "calc"
+                ? "bg-[#16A34A] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📝 Hitungan
+          </button>
+          <button
+            type="button"
             onClick={() => setMobileTab("stats")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "stats"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            📊 Data & Vektor
+            📊 Data
           </button>
           <button
             type="button"
             onClick={() => setMobileTab("theory")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "theory"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            🦉 Tips & Rumus
+            🦉 Tips
           </button>
         </div>
 
@@ -610,7 +623,87 @@ export default function GyroscopeModule() {
           </Panel>
         </div>
 
-        {/* Section 2: Stats & Telemetry */}
+        {/* Section 2: Step-by-Step Calculation */}
+        <div className={`${mobileTab === "calc" ? "block" : "hidden"} lg:block space-y-3`}>
+          {mode === "chair" ? (
+            <StepCalculation
+              diketahui={[
+                { symbol: "I_{\\text{kursi}}", value: I_chair.toFixed(2), unit: "kg·m²", desc: "Inersia Kursi+Orang" },
+                { symbol: "m_{\\text{roda}}", value: wheelMass.toFixed(1), unit: "kg", desc: "Massa Roda Sepeda" },
+                { symbol: "R", value: wheelRadius.toFixed(2), unit: "m", desc: "Radius Pelek" },
+                { symbol: "\\omega_{\\text{roda}}", value: wheelSpin.toFixed(1), unit: "rad/s", desc: "Kec. Sudut Roda" },
+                { symbol: "\\theta", value: `${tiltAngle}°`, unit: "", desc: "Sudut Balik Roda" },
+              ]}
+              ditanya={{
+                symbol: "\\omega_{\\text{kursi}}",
+                desc: "Kecepatan Putaran Kursi Akibat Balikan Roda",
+                unit: "rad/s",
+              }}
+              langkah={[
+                {
+                  step: "Hitung Momen Inersia & Momentum Roda",
+                  formula: "I_{\\text{roda}} = mR^2 ,\\quad L_{\\text{roda}} = I_{\\text{roda}} \\omega",
+                  substitution: `I_{\\text{roda}} = ${wheelMass.toFixed(1)} \\times (${wheelRadius.toFixed(2)})^2 = ${I_wheel.toFixed(3)},\\; L = ${L_wheel.toFixed(2)}`,
+                  result: `L_{\\text{roda}} = ${L_wheel.toFixed(2)} kg·m²/s`,
+                  explanation: "Roda sepeda diasumsikan sebagai silinder tipis berongga (cincin tipis).",
+                },
+                {
+                  step: "Terapkan Kekekalan Momentum Sudut Vertikal",
+                  formula: "L_{\\text{awal}} = L_{\\text{akhir}} \\Rightarrow +L_{\\text{roda}} = L_{\\text{kursi}} + L_{\\text{roda}}\\cos\\theta",
+                  substitution: `L_{\\text{kursi}} = ${L_wheel.toFixed(2)} \\times (1 - \\cos(${tiltAngle}^\\circ))`,
+                  result: `L_{\\text{kursi}} = ${L_chair.toFixed(2)} kg·m²/s`,
+                  explanation: "Saat roda dibalik 180° (cos 180° = -1), kursi harus berputar dengan momentum 2 kali lipat roda!",
+                },
+                {
+                  step: "Peroleh Kecepatan Sudut Kursi Putar",
+                  formula: "\\omega_{\\text{kursi}} = \\dfrac{L_{\\text{kursi}}}{I_{\\text{kursi}}}",
+                  substitution: `\\omega_{\\text{kursi}} = \\dfrac{${L_chair.toFixed(2)}}{${I_chair.toFixed(2)}}`,
+                  result: `\\omega_{\\text{kursi}} = ${chairOmega.toFixed(2)} rad/s`,
+                  explanation: "Tubuh dan kursi berputar secara spontan tanpa perlu dorongan lantai!",
+                },
+              ]}
+            />
+          ) : (
+            <StepCalculation
+              diketahui={[
+                { symbol: "m", value: wheelMass.toFixed(1), unit: "kg", desc: "Massa Roda" },
+                { symbol: "d", value: d.toFixed(2), unit: "m", desc: "Jarak Tali ke CM" },
+                { symbol: "g", value: g.toFixed(1), unit: "m/s²", desc: "Gravitasi" },
+                { symbol: "\\omega_s", value: wheelSpin.toFixed(1), unit: "rad/s", desc: "Kec. Spin Roda" },
+              ]}
+              ditanya={{
+                symbol: "\\Omega_p",
+                desc: "Kecepatan Sudut Presesi Horizontal",
+                unit: "rad/s",
+              }}
+              langkah={[
+                {
+                  step: "Hitung Torsi Gravitasi Luar (τ)",
+                  formula: "\\tau = r \\times mg = d \\cdot m \\cdot g",
+                  substitution: `\\tau = ${d} \\times ${wheelMass.toFixed(1)} \\times ${g}`,
+                  result: `\\tau = ${torque.toFixed(2)} N·m`,
+                  explanation: "Torsi mengarah horizontal tegak lurus terhadap poros roda.",
+                },
+                {
+                  step: "Hitung Momentum Sudut Spin Roda (L)",
+                  formula: "L = I_{\\text{roda}} \\omega_s = m R^2 \\omega_s",
+                  substitution: `L = ${I_wheel.toFixed(3)} \\times ${wheelSpin.toFixed(1)}`,
+                  result: `L = ${L_wheel.toFixed(2)} kg·m²/s`,
+                  explanation: "Spin berkecepatan tinggi menciptakan kestabilan giroskopik masif.",
+                },
+                {
+                  step: "Hitung Kecepatan Sudut Presesi (Ω_p)",
+                  formula: "\\Omega_p = \\dfrac{\\tau}{L} = \\dfrac{mgd}{I\\omega_s}",
+                  substitution: `\\Omega_p = \\dfrac{${torque.toFixed(2)}}{${L_wheel.toFixed(2)}}`,
+                  result: `\\Omega_p = ${precessOmega.toFixed(2)} rad/s`,
+                  explanation: "Makin cepat spin roda (ω_s tinggi), gerakan presesi Ω_p justru semakin lambat!",
+                },
+              ]}
+            />
+          )}
+        </div>
+
+        {/* Section 3: Stats & Telemetry */}
         <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
           <div className="grid grid-cols-2 gap-2">
             <StatCard
@@ -640,7 +733,7 @@ export default function GyroscopeModule() {
           </div>
         </div>
 
-        {/* Section 3: Theory & Mascot on Mobile */}
+        {/* Section 4: Theory & Mascot on Mobile */}
         <div className={`${mobileTab === "theory" ? "block" : "hidden"} lg:block space-y-3`}>
           <div className="lg:hidden">
             <Mascot

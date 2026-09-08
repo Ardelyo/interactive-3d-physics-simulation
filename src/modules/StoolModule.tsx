@@ -7,6 +7,7 @@ import { Slider } from "../components/ui/Slider";
 import { Panel, StatCard } from "../components/ui/Panel";
 import { FBlock, F } from "../components/ui/Formula";
 import { Mascot } from "../components/ui/Mascot";
+import { StepCalculation } from "../components/ui/StepCalculation";
 import { Html, Billboard, Text } from "@react-three/drei";
 import { sound, triggerHaptic } from "../utils/audio";
 import confetti from "canvas-confetti";
@@ -196,7 +197,7 @@ export default function StoolModule() {
   const [radius, setRadius] = useState<number>(0.85);
   const [omega0, setOmega0] = useState<number>(2.5);
   const [spinning, setSpinning] = useState<boolean>(false);
-  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
+  const [mobileTab, setMobileTab] = useState<"controls" | "calc" | "stats" | "theory">("controls");
 
   const thetaRef = useRef<number>(0);
   const omegaRef = useRef<number>(0);
@@ -338,11 +339,11 @@ export default function StoolModule() {
       {/* Control & Verification Panel (Mobile Tabbed, Desktop Multi-Column) */}
       <div className="lg:col-span-4 space-y-3">
         {/* Mobile Segmented Switcher */}
-        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs overflow-x-auto">
           <button
             type="button"
             onClick={() => setMobileTab("controls")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "controls"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
@@ -352,25 +353,36 @@ export default function StoolModule() {
           </button>
           <button
             type="button"
+            onClick={() => setMobileTab("calc")}
+            className={`flex-1 min-w-[85px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "calc"
+                ? "bg-[#16A34A] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📝 Hitungan
+          </button>
+          <button
+            type="button"
             onClick={() => setMobileTab("stats")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "stats"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            📊 Data & Tabel
+            📊 Tabel
           </button>
           <button
             type="button"
             onClick={() => setMobileTab("theory")}
-            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+            className={`flex-1 min-w-[70px] rounded-lg py-1.5 text-xs font-heading font-bold transition ${
               mobileTab === "theory"
                 ? "bg-[#1CB0F6] text-white shadow-xs"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
-            🦉 Tips & Rumus
+            🦉 Tips
           </button>
         </div>
 
@@ -450,7 +462,40 @@ export default function StoolModule() {
           </div>
         </div>
 
-        {/* Section 2: Numerical Verification Table */}
+        {/* Section 2: Step-by-Step Calculation */}
+        <div className={`${mobileTab === "calc" ? "block" : "hidden"} lg:block space-y-3`}>
+          <StepCalculation
+            diketahui={[
+              { symbol: "I_0", value: bodyI.toFixed(2), unit: "kg·m²", desc: "Inersia Tubuh+Kursi" },
+              { symbol: "m", value: dumbbellMass.toFixed(1), unit: "kg", desc: "Massa Tiap Barbel" },
+              { symbol: "r", value: radius.toFixed(2), unit: "m", desc: "Jarak Beban ke Poros" },
+              { symbol: "L", value: LRef.current.toFixed(2), unit: "kg·m²/s", desc: "Momentum Sudut Total" },
+            ]}
+            ditanya={{
+              symbol: "\\omega_{\\text{akhir}}",
+              desc: "Kecepatan Sudut Baru Akibat Perubahan Jarak Beban r",
+              unit: "rad/s",
+            }}
+            langkah={[
+              {
+                step: "Hitung Momen Inersia Total Sistem (I)",
+                formula: "I = I_0 + 2 \\cdot m \\cdot r^2",
+                substitution: `I = ${bodyI.toFixed(2)} + 2 \\times ${dumbbellMass.toFixed(1)} \\times (${radius.toFixed(2)})^2 = ${bodyI.toFixed(2)} + ${(2 * dumbbellMass * radius * radius).toFixed(3)}`,
+                result: `I = ${I.toFixed(3)} kg·m²`,
+                explanation: "Karena r dikuadratkan, mendekatkan beban ke dada memangkas inersia dengan sangat cepat!",
+              },
+              {
+                step: "Terapkan Hukum Kekekalan Momentum Sudut",
+                formula: "I_1 \\omega_1 = I_2 \\omega_2 \\Rightarrow \\omega_2 = \\dfrac{L}{I_2}",
+                substitution: `\\omega = \\dfrac{${LRef.current.toFixed(2)}}{${I.toFixed(3)}}`,
+                result: `\\omega = ${omegaRef.current.toFixed(2)} rad/s`,
+                explanation: "Tidak ada momen gaya luar pada bantalan kursi putar (τ = 0), sehingga L konstan.",
+              },
+            ]}
+          />
+        </div>
+
+        {/* Section 3: Numerical Verification Table */}
         <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
           {snapshots.length > 0 ? (
             <Panel title="Tabel Verifikasi L₁ = L₂" icon="🧮">
