@@ -9,6 +9,7 @@ import { FBlock, F } from "../components/ui/Formula";
 import { LiveChart } from "../components/ui/LiveChart";
 import { Mascot } from "../components/ui/Mascot";
 import { StepCalculation } from "../components/ui/StepCalculation";
+import { AnimativeLatexProof } from "../components/ui/AnimativeLatexProof";
 import { Billboard, Text } from "@react-three/drei";
 import { sound, triggerHaptic } from "../utils/audio";
 
@@ -286,6 +287,16 @@ export default function ParticleModule() {
   const I = mass * radius * radius;
   const L = I * omega;
 
+  const handleApplyScenario = () => {
+    sound.playSuccess();
+    triggerHaptic("success");
+    setMass(0.2);
+    setRadius(2.4);
+    setOmegaMag(5.0);
+    setCcw(true);
+    setMobileTab("calc");
+  };
+
   useEffect(() => {
     const id = setInterval(() => {
       setHistory((h) => ({
@@ -494,6 +505,28 @@ export default function ParticleModule() {
 
         {/* Controls Section (Shown on desktop OR mobile tab === 'controls') */}
         <div className={`${mobileTab === "controls" ? "block" : "hidden"} lg:block space-y-3`}>
+          {/* Quick Scenario Preset Banner */}
+          <div className="rounded-2xl border-2 border-[#FEF08A] bg-[#FEFCE8] p-3 shadow-xs space-y-2">
+            <div className="flex items-center justify-between gap-1">
+              <span className="font-heading text-xs font-bold text-[#A16207] flex items-center gap-1.5">
+                <span>🎬 Skenario Presentasi Kelompok</span>
+              </span>
+              <span className="rounded-md bg-[#FEF9C3] px-1.5 py-0.2 text-[10px] font-extrabold text-[#854D0E] border border-[#FDE047]">
+                Sabrina &amp; Gladies
+              </span>
+            </div>
+            <p className="text-[11px] text-[#854D0E] font-medium leading-tight">
+              Klik untuk langsung menyetel nilai demonstrasi: <strong>m = 0,20 kg</strong>, <strong>r = 2,40 m</strong>, dan <strong>ω = 5,00 rad/s</strong>.
+            </p>
+            <button
+              type="button"
+              onClick={handleApplyScenario}
+              className="btn-duo btn-duo-yellow w-full py-2 text-xs"
+            >
+              ⚡ Pasang Nilai Skenario Presentasi
+            </button>
+          </div>
+
           <Panel title="Parameter Partikel" icon="🎯">
             <div className="space-y-3">
               <Slider
@@ -505,6 +538,11 @@ export default function ParticleModule() {
                 unit="kg"
                 accent="amber"
                 onChange={setMass}
+                quickPicks={[
+                  { label: "⭐ Presentasi (0.20)", val: 0.2 },
+                  { label: "1.0 kg", val: 1.0 },
+                  { label: "2.0 kg", val: 2.0 },
+                ]}
               />
               <Slider
                 label="Jari-jari Lintasan (r)"
@@ -516,6 +554,11 @@ export default function ParticleModule() {
                 accent="sky"
                 onChange={setRadius}
                 hint="Jarak partikel ke sumbu pusat"
+                quickPicks={[
+                  { label: "0.8 m", val: 0.8 },
+                  { label: "1.5 m", val: 1.5 },
+                  { label: "⭐ Presentasi (2.40)", val: 2.4 },
+                ]}
               />
               <Slider
                 label="Kecepatan Sudut (ω)"
@@ -526,6 +569,11 @@ export default function ParticleModule() {
                 unit="rad/s"
                 accent="green"
                 onChange={setOmegaMag}
+                quickPicks={[
+                  { label: "1.0 rad/s", val: 1.0 },
+                  { label: "3.0 rad/s", val: 3.0 },
+                  { label: "⭐ Presentasi (5.00)", val: 5.0 },
+                ]}
               />
             </div>
           </Panel>
@@ -565,6 +613,14 @@ export default function ParticleModule() {
 
         {/* Step-by-Step Calculation Section (Diketahui, Ditanya, Dijawab) */}
         <div className={`${mobileTab === "calc" ? "block" : "hidden"} lg:block space-y-3`}>
+          {/* Interactive Animative LaTeX Proof (Sabrina & Gladies) */}
+          <AnimativeLatexProof
+            currentMass={mass}
+            currentRadius={radius}
+            currentOmega={omega}
+            onApplyScenario={handleApplyScenario}
+          />
+
           <StepCalculation
             diketahui={[
               { symbol: "m", value: mass.toFixed(2), unit: "kg", desc: "Massa Partikel" },

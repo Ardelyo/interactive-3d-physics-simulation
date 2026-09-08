@@ -8,6 +8,7 @@ import DiverModule from "./modules/DiverModule";
 import KeplerModule from "./modules/KeplerModule";
 import { SummaryModal } from "./components/ui/SummaryModal";
 import { QuizModal } from "./components/ui/QuizModal";
+import { PresentationScriptModal } from "./components/ui/PresentationScriptModal";
 import { sound } from "./utils/audio";
 import { cn } from "./utils/cn";
 
@@ -74,6 +75,7 @@ export default function App() {
   const [activeId, setActiveId] = useState<(typeof TABS)[number]["id"]>("particle");
   const [showSummary, setShowSummary] = useState<boolean>(false);
   const [showQuiz, setShowQuiz] = useState<boolean>(false);
+  const [showScriptModal, setShowScriptModal] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(sound.isEnabled());
 
   const active = TABS.find((t) => t.id === activeId) || TABS[0];
@@ -124,6 +126,19 @@ export default function App() {
               title={soundEnabled ? "Matikan Suara" : "Nyalakan Suara"}
             >
               {soundEnabled ? "🔊" : "🔇"}
+            </button>
+
+            {/* Presentation Script Button */}
+            <button
+              type="button"
+              onClick={() => {
+                sound.playPop(550);
+                setShowScriptModal(true);
+              }}
+              className="btn-duo btn-duo-yellow px-2.5 py-1 text-xs"
+              title="Buka Skrip Presentasi Kelompok"
+            >
+              🎤 <span className="hidden sm:inline">Skrip Presentasi</span>
             </button>
 
             {/* Formula Reference */}
@@ -225,6 +240,14 @@ export default function App() {
         isOpen={showQuiz}
         onClose={() => setShowQuiz(false)}
         onEarnXp={() => {}}
+      />
+      <PresentationScriptModal
+        isOpen={showScriptModal}
+        onClose={() => setShowScriptModal(false)}
+        onApplyScenario={() => {
+          setActiveId("particle");
+          setShowScriptModal(false);
+        }}
       />
     </div>
   );
