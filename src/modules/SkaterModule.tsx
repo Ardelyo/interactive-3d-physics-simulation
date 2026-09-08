@@ -20,6 +20,82 @@ function armRadius(extension: number) {
   return SHOULDER_R + ARM_LEN * Math.sin(angle);
 }
 
+function IceArenaEnvironment() {
+  return (
+    <group position={[0, 0, 0]}>
+      {/* Glossy Ice Rink Surface */}
+      <mesh position={[0, -0.015, 0]} receiveShadow>
+        <cylinderGeometry args={[4.2, 4.3, 0.05, 64]} />
+        <meshStandardMaterial
+          color="#E0F2FE"
+          roughness={0.06}
+          metalness={0.2}
+        />
+      </mesh>
+
+      {/* Rink Dasher Boards (Outer Protective Barrier) */}
+      <mesh position={[0, 0.25, 0]}>
+        <cylinderGeometry args={[4.2, 4.2, 0.5, 64, 1, true]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={0.3} side={THREE.DoubleSide} />
+      </mesh>
+      {/* Dasher Blue Cap Rail */}
+      <mesh position={[0, 0.51, 0]}>
+        <cylinderGeometry args={[4.22, 4.22, 0.04, 64, 1, true]} />
+        <meshStandardMaterial color="#0284C7" roughness={0.2} side={THREE.DoubleSide} />
+      </mesh>
+      {/* Dasher Yellow Kickplate */}
+      <mesh position={[0, 0.06, 0]}>
+        <cylinderGeometry args={[4.19, 4.19, 0.1, 64, 1, true]} />
+        <meshStandardMaterial color="#FFC800" roughness={0.4} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Transparent Protective Glass above Boards */}
+      <mesh position={[0, 0.9, 0]}>
+        <cylinderGeometry args={[4.2, 4.2, 0.75, 64, 1, true]} />
+        <meshPhysicalMaterial
+          color="#BAE6FD"
+          transmission={0.9}
+          opacity={0.3}
+          transparent
+          roughness={0.05}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Background Tiered Arena Grandstand Seating */}
+      <group position={[0, 0.4, 0]}>
+        {[5.2, 6.0, 6.8].map((radius, idx) => (
+          <mesh key={idx} position={[0, idx * 0.4, 0]}>
+            <cylinderGeometry args={[radius, radius + 0.6, 0.38, 48, 1, true]} />
+            <meshStandardMaterial color={idx % 2 === 0 ? "#CBD5E1" : "#94A3B8"} roughness={0.7} side={THREE.DoubleSide} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* Overhead Arena Floodlight Trusses */}
+      {[-3.5, 3.5].map((x) => (
+        <group key={x} position={[x, 3.2, -2.5]}>
+          <mesh>
+            <boxGeometry args={[0.8, 0.25, 0.4]} />
+            <meshStandardMaterial color="#334155" />
+          </mesh>
+          <pointLight intensity={1.8} distance={8} color="#F0F9FF" />
+        </group>
+      ))}
+
+      {/* Circular Ice Markings */}
+      <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.3, 1.34, 64]} />
+        <meshBasicMaterial color="#38BDF8" transparent opacity={0.6} />
+      </mesh>
+      <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[2.5, 2.54, 64]} />
+        <meshBasicMaterial color="#F43F5E" transparent opacity={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
 function IceSparkles({ count = 30, spinning }: { count?: number; spinning: boolean }) {
   const points = useMemo(() => {
     const p = new Float32Array(count * 3);
@@ -268,27 +344,11 @@ export default function SkaterModule() {
       {/* 3D Viewport */}
       <div className="lg:col-span-8 flex flex-col gap-4">
         <div className="relative h-[420px] sm:h-[500px] w-full overflow-hidden rounded-3xl border-2 border-[#E5E7EB] bg-[#F8FAFC] shadow-[0_4px_0_0_#E5E7EB]">
-          <SceneShell camera={{ position: [3.2, 2.2, 3.8], fov: 42 }} groundY={0}>
-            {/* Ice Rink Stage Platform */}
-            <mesh position={[0, -0.01, 0]} receiveShadow>
-              <cylinderGeometry args={[2.5, 2.6, 0.04, 48]} />
-              <meshStandardMaterial
-                color="#E0F2FE"
-                roughness={0.08}
-                metalness={0.15}
-              />
-            </mesh>
-            {/* Ice rings */}
-            <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[1.2, 1.22, 64]} />
-              <meshBasicMaterial color="#BAE6FD" />
-            </mesh>
-            <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[2.2, 2.22, 64]} />
-              <meshBasicMaterial color="#BAE6FD" />
-            </mesh>
+          <SceneShell camera={{ position: [3.4, 2.4, 4.2], fov: 42 }} groundY={0}>
+            {/* Full Olympic Ice Arena Environment */}
+            <IceArenaEnvironment />
 
-            {/* Skater */}
+            {/* Skater Model */}
             <SkaterModel
               extension={extension}
               thetaRef={thetaRef}

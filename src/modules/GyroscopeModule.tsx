@@ -132,6 +132,36 @@ function Scene({
 
   return (
     <group position={[0, 0, 0]}>
+      {/* Physics Classroom / Laboratory Backdrop */}
+      <group position={[0, 1.8, -2.4]}>
+        {/* Wooden Frame */}
+        <mesh position={[0, 0, -0.02]}>
+          <boxGeometry args={[4.6, 2.1, 0.06]} />
+          <meshStandardMaterial color="#78350F" roughness={0.7} />
+        </mesh>
+        {/* Slate Blackboard */}
+        <mesh>
+          <boxGeometry args={[4.4, 1.9, 0.04]} />
+          <meshStandardMaterial color="#0F172A" roughness={0.8} />
+        </mesh>
+        {/* Chalk Title & Formula Billboard */}
+        <Billboard position={[0, 0.55, 0.04]}>
+          <Text fontSize={0.16} color="#38BDF8" anchorX="center" fontWeight="bold">
+            PRAKTIKUM FISIKA: DINAMIKA ROTASI & GIROSKOP
+          </Text>
+        </Billboard>
+        <Billboard position={[0, 0.1, 0.04]}>
+          <Text fontSize={0.13} color="#F8FAFC" anchorX="center">
+            L_total = L_kursi + L_roda = Konstan  |  Ω_p = τ / L
+          </Text>
+        </Billboard>
+        {/* Chalk Tray */}
+        <mesh position={[0, -0.98, 0.08]}>
+          <boxGeometry args={[4.4, 0.06, 0.16]} />
+          <meshStandardMaterial color="#92400E" />
+        </mesh>
+      </group>
+
       {mode === "chair" ? (
         /* ================= MODE 1: SWIVEL CHAIR & BICYCLE WHEEL ================= */
         <group>

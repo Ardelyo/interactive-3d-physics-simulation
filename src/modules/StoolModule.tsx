@@ -7,7 +7,7 @@ import { Slider } from "../components/ui/Slider";
 import { Panel, StatCard } from "../components/ui/Panel";
 import { FBlock, F } from "../components/ui/Formula";
 import { Mascot } from "../components/ui/Mascot";
-import { Html } from "@react-three/drei";
+import { Html, Billboard, Text } from "@react-three/drei";
 import { sound, triggerHaptic } from "../utils/audio";
 import confetti from "canvas-confetti";
 
@@ -42,6 +42,28 @@ function ChairScene({
 
   return (
     <group>
+      {/* Physics Laboratory Classroom Backdrop */}
+      <group position={[0, 1.8, -2.4]}>
+        <mesh position={[0, 0, -0.02]}>
+          <boxGeometry args={[4.4, 2.0, 0.05]} />
+          <meshStandardMaterial color="#78350F" roughness={0.7} />
+        </mesh>
+        <mesh>
+          <boxGeometry args={[4.2, 1.8, 0.04]} />
+          <meshStandardMaterial color="#0F172A" roughness={0.8} />
+        </mesh>
+        <Billboard position={[0, 0.5, 0.04]}>
+          <Text fontSize={0.16} color="#38BDF8" anchorX="center" fontWeight="bold">
+            PRAKTIKUM: BANGKU PUTAR & DUA BEBAN
+          </Text>
+        </Billboard>
+        <Billboard position={[0, 0.05, 0.04]}>
+          <Text fontSize={0.13} color="#F8FAFC" anchorX="center">
+            I_1 · ω_1 = I_2 · ω_2  |  I = I_0 + 2·m·r²
+          </Text>
+        </Billboard>
+      </group>
+
       {/* 5-Star Chrome Office Chair Base (Fixed to Floor) */}
       <mesh position={[0, 0.03, 0]} receiveShadow>
         <cylinderGeometry args={[0.42, 0.48, 0.06, 24]} />

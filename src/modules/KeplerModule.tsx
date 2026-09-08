@@ -57,6 +57,26 @@ function Sector({ points, color }: { points: THREE.Vector3[]; color: string }) {
   );
 }
 
+function Starfield({ count = 160 }: { count?: number }) {
+  const points = useMemo(() => {
+    const p = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      p[i * 3] = (Math.random() - 0.5) * 36;
+      p[i * 3 + 1] = (Math.random() - 0.5) * 16 + 2;
+      p[i * 3 + 2] = (Math.random() - 0.5) * 36;
+    }
+    return p;
+  }, [count]);
+  return (
+    <points>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[points, 3]} />
+      </bufferGeometry>
+      <pointsMaterial size={0.06} color="#BAE6FD" transparent opacity={0.65} />
+    </points>
+  );
+}
+
 function Scene({
   state,
   running,
@@ -100,6 +120,9 @@ function Scene({
 
   return (
     <group>
+      {/* Deep Space Starfield Backdrop */}
+      <Starfield />
+
       {/* Radiant Sun */}
       <mesh position={[0, 0, 0]}>
         <sphereGeometry args={[0.45, 32, 32]} />

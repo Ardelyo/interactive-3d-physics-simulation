@@ -171,16 +171,59 @@ function Scene({
         </mesh>
       ))}
 
-      {/* Diving Tower Structure */}
+      {/* Diving Tower Structure (Multi-Tier Olympic Tower) */}
       <mesh position={[0, boardHeight / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[1.0, boardHeight, 1.6]} />
-        <meshStandardMaterial color="#CBD5E1" roughness={0.5} />
+        <meshStandardMaterial color="#E2E8F0" roughness={0.4} />
       </mesh>
-      {/* Springboard */}
-      <mesh position={[0.65, boardHeight, 0]} castShadow>
-        <boxGeometry args={[1.3, 0.08, 1.1]} />
-        <meshStandardMaterial color="#38BDF8" roughness={0.4} />
+      {/* Lower Platform Tiers (5m and 7.5m) */}
+      {boardHeight > 5.5 && (
+        <group position={[0.45, 5, 0]}>
+          <mesh castShadow>
+            <boxGeometry args={[0.9, 0.08, 1.2]} />
+            <meshStandardMaterial color="#38BDF8" />
+          </mesh>
+        </group>
+      )}
+      {/* Springboard with Non-slip Mat */}
+      <mesh position={[0.7, boardHeight, 0]} castShadow>
+        <boxGeometry args={[1.4, 0.08, 1.1]} />
+        <meshStandardMaterial color="#0284C7" roughness={0.3} />
       </mesh>
+      {/* Safety Railings on Top Platform */}
+      {[-0.5, 0.5].map((z) => (
+        <group key={z} position={[0.1, boardHeight + 0.45, z]}>
+          <mesh>
+            <boxGeometry args={[1.0, 0.04, 0.04]} />
+            <meshStandardMaterial color="#CBD5E1" metalness={0.8} />
+          </mesh>
+          <mesh position={[-0.45, -0.22, 0]}>
+            <cylinderGeometry args={[0.02, 0.02, 0.45, 8]} />
+            <meshStandardMaterial color="#CBD5E1" metalness={0.8} />
+          </mesh>
+          <mesh position={[0.45, -0.22, 0]}>
+            <cylinderGeometry args={[0.02, 0.02, 0.45, 8]} />
+            <meshStandardMaterial color="#CBD5E1" metalness={0.8} />
+          </mesh>
+        </group>
+      ))}
+      {/* Ladder Rungs up the Back */}
+      {Array.from({ length: Math.floor(boardHeight * 2) }).map((_, i) => (
+        <mesh key={i} position={[-0.52, i * 0.5 + 0.3, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.018, 0.018, 0.5, 8]} />
+          <meshStandardMaterial color="#94A3B8" metalness={0.8} />
+        </mesh>
+      ))}
+
+      {/* Aquatic Arena Grandstand in Background */}
+      <group position={[4.5, 0, -4.5]}>
+        {[0, 1, 2, 3].map((step) => (
+          <mesh key={step} position={[0, step * 0.4, -step * 0.5]}>
+            <boxGeometry args={[14, 0.4, 0.6]} />
+            <meshStandardMaterial color={step % 2 === 0 ? "#E2E8F0" : "#CBD5E1"} />
+          </mesh>
+        ))}
+      </group>
 
       {/* The Diver */}
       <group position={diverPos}>
