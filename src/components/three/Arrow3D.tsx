@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import * as THREE from "three";
-import { Html } from "@react-three/drei";
+import { Billboard, Text } from "@react-three/drei";
 
 /**
- * Realistic vector arrow (shaft + cone head) with crisp Duolingo-style 3D labels.
+ * High-performance 3D vector arrow with smooth WebGL billboard labeling.
+ * No HTML DOM jitter or CSS transform lag during rapid rotation!
  */
 export function Arrow3D({
   from = [0, 0, 0] as [number, number, number],
@@ -14,6 +15,7 @@ export function Arrow3D({
   label,
   labelColor,
   opacity = 1,
+  showLabel = true,
 }: {
   from?: [number, number, number];
   direction: [number, number, number];
@@ -23,13 +25,14 @@ export function Arrow3D({
   label?: string;
   labelColor?: string;
   opacity?: number;
+  showLabel?: boolean;
 }) {
   const { quaternion, shaftLen, headLen } = useMemo(() => {
     const dir = new THREE.Vector3(...direction);
     if (dir.lengthSq() < 1e-9) dir.set(0, 1, 0);
     dir.normalize();
     const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-    const hLen = Math.min(0.26, Math.max(0.09, length * 0.22));
+    const hLen = Math.min(0.28, Math.max(0.08, length * 0.22));
     const sLen = Math.max(0.001, length - hLen);
     return { quaternion: q, shaftLen: sLen, headLen: hLen };
   }, [direction, length]);
@@ -44,41 +47,45 @@ export function Arrow3D({
         <meshStandardMaterial
           color={color}
           roughness={0.25}
-          metalness={0.2}
+          metalness={0.3}
           emissive={color}
-          emissiveIntensity={0.2}
+          emissiveIntensity={0.25}
           transparent
           opacity={opacity}
         />
       </mesh>
+
       {/* Cone Head */}
       <mesh position={[0, shaftLen + headLen / 2, 0]}>
         <coneGeometry args={[radius * 2.8, headLen, 20]} />
         <meshStandardMaterial
           color={color}
           roughness={0.2}
-          metalness={0.2}
+          metalness={0.3}
           emissive={color}
           emissiveIntensity={0.35}
           transparent
           opacity={opacity}
         />
       </mesh>
-      {/* Crisp Floating Vector Tag */}
-      {label && (
-        <Html position={[0, shaftLen + headLen + 0.14, 0]} center distanceFactor={7} occlude={false}>
-          <div
-            className="select-none pointer-events-none whitespace-nowrap rounded-lg px-2 py-0.5 text-[11px] font-extrabold shadow-sm flex items-center gap-1 border"
-            style={{
-              backgroundColor: "#FFFFFF",
-              color: labelColor ?? color,
-              borderColor: labelColor ?? color,
-              boxShadow: "0 2px 4px rgba(0,0,0,0.06)",
-            }}
+
+      {/* Smooth WebGL Billboard Label (Rotates with camera, zero DOM jitter) */}
+      {showLabel && label && (
+        <Billboard position={[0, shaftLen + headLen + 0.14, 0]}>
+          <mesh position={[0, 0, -0.01]}>
+            <planeGeometry args={[label.length * 0.08 + 0.16, 0.2]} />
+            <meshBasicMaterial color="#FFFFFF" transparent opacity={0.92} />
+          </mesh>
+          <Text
+            fontSize={0.12}
+            color={labelColor ?? color}
+            anchorX="center"
+            anchorY="middle"
+            fontWeight="bold"
           >
-            <span>{label}</span>
-          </div>
-        </Html>
+            {label}
+          </Text>
+        </Billboard>
       )}
     </group>
   );

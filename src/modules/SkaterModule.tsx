@@ -211,6 +211,7 @@ export default function SkaterModule() {
   const [omega0, setOmega0] = useState<number>(3.5);
   const [spinning, setSpinning] = useState<boolean>(false);
   const [friction, setFriction] = useState<boolean>(false);
+  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
 
   const thetaRef = useRef<number>(0);
   const omegaRef = useRef<number>(0);
@@ -365,118 +366,172 @@ export default function SkaterModule() {
           </div>
         </div>
 
-        {/* Mascot */}
-        <Mascot
-          mood="amazed"
-          quote="Saat tangan penari ditarik mendekati badan, momen inersianya (I) turun drastis! Karena es licin dan tidak ada torsi luar, alam semesta memaksa putarannya (ω) melesat kencang agar L tetap sama!"
-          tip="Energi kinetik rotasi Ek = 1/2 I ω² justru bertambah saat tangan didekapkan! Energi tambahan ini berasal dari usaha otot penari yang menarik tangannya melawan gaya sentrifugal!"
-          mission={{
-            text: "Coba rapatkan tangan penari ke dada saat sedang berputar!",
-            actionLabel: "Tarik Tangan Rapat 🤲",
-            onAction: () => setExtension(0.02),
-          }}
-        />
-      </div>
-
-      {/* Controls & Telemetry */}
-      <div className="lg:col-span-4 space-y-4">
-        <Panel title="Kontrol Posisi Penari" icon="🩰">
-          <div className="space-y-4">
-            <Slider
-              label="Rentangan Kedua Lengan"
-              value={extension}
-              min={0}
-              max={1}
-              step={0.01}
-              precision={2}
-              accent="green"
-              onChange={setExtension}
-              hint="0 = Lengan rapat di dada (I kecil) · 1 = Lengan terentang lebar (I besar)"
-              quickPicks={[
-                { label: "Rapat (0.1)", val: 0.1 },
-                { label: "Setengah (0.5)", val: 0.5 },
-                { label: "Lebar (1.0)", val: 1.0 },
-              ]}
-            />
-
-            <Slider
-              label="Kecepatan Awal (ω₀)"
-              value={omega0}
-              min={1}
-              max={8}
-              step={0.5}
-              unit="rad/s"
-              accent="sky"
-              disabled={spinning}
-              onChange={setOmega0}
-              hint="Beri dorongan awal saat penari mulai berputar di atas es"
-            />
-
-            <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={friction}
-                onChange={(e) => setFriction(e.target.checked)}
-                className="h-4 w-4 rounded accent-[#58CC02]"
-              />
-              <span>Sertakan sedikit gesekan es nyata</span>
-            </label>
-          </div>
-        </Panel>
-
-        {/* Telemetry Stat Cards */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            label="Momen Inersia (I)"
-            value={I.toFixed(3)}
-            unit="kg·m²"
-            color="amber"
-            sublabel="I = I_badan + 2·m·r²"
-          />
-          <StatCard
-            label="Kec. Sudut (ω)"
-            value={omegaRef.current.toFixed(2)}
-            unit="rad/s"
-            color="emerald"
-            sublabel="Makin kecil I, makin besar ω"
-          />
-          <StatCard
-            label="Momentum Sudut (L)"
-            value={LRef.current.toFixed(2)}
-            unit="kg·m²/s"
-            color="sky"
-            sublabel="L = I·ω (Selalu Kekal!)"
-          />
-          <StatCard
-            label="Energi Kinetik (Ek)"
-            value={Ek.toFixed(1)}
-            unit="J"
-            color="rose"
-            sublabel="Ek = 1/2 I·ω²"
+        {/* Mascot (Desktop always visible) */}
+        <div className="hidden lg:block">
+          <Mascot
+            mood="amazed"
+            quote="Saat tangan penari ditarik mendekati badan, momen inersianya (I) turun drastis! Karena es licin dan tidak ada torsi luar, alam semesta memaksa putarannya (ω) melesat kencang agar L tetap sama!"
+            tip="Energi kinetik rotasi Ek = 1/2 I ω² justru bertambah saat tangan didekapkan! Energi tambahan ini berasal dari usaha otot penari yang menarik tangannya melawan gaya sentrifugal!"
+            mission={{
+              text: "Coba rapatkan tangan penari ke dada saat sedang berputar!",
+              actionLabel: "Tarik Tangan Rapat 🤲",
+              onAction: () => setExtension(0.02),
+            }}
           />
         </div>
+      </div>
 
-        {/* Real-time Graph */}
-        <Panel title="Grafik Real-time (Kekekalan L)" icon="📈">
-          <LiveChart
-            series={[
-              { data: history.I, color: "#EAB308", label: "Inersia I", unit: "kg·m²" },
-              { data: history.omega, color: "#22C55E", label: "Kec. Sudut ω", unit: "rad/s" },
-              { data: history.L, color: "#0EA5E9", label: "Momentum L", unit: "kg·m²/s" },
-            ]}
-          />
-        </Panel>
+      {/* Controls & Telemetry (Mobile Tabbed, Desktop Multi-Column) */}
+      <div className="lg:col-span-4 space-y-3">
+        {/* Mobile Segmented Switcher */}
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setMobileTab("controls")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "controls"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🎛️ Kontrol
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("stats")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "stats"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📊 Data & Grafik
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("theory")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "theory"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🦉 Tips & Rumus
+          </button>
+        </div>
 
-        {/* Formula breakdown */}
-        <Panel title="Rumus Fisika Terkait" icon="📘">
-          <div className="space-y-3">
-            <FBlock
-              tex="I_1\omega_1 = I_2\omega_2 = L \quad (\tau_{\text{luar}} = 0)"
-              label="Hukum Kekekalan"
-              explanation="Momentum sudut awal sama persis dengan momentum sudut akhir saat tidak ada torsi luar."
+        {/* Section 1: Controls */}
+        <div className={`${mobileTab === "controls" ? "block" : "hidden"} lg:block space-y-3`}>
+          <Panel title="Kontrol Posisi Penari" icon="🩰">
+            <div className="space-y-3">
+              <Slider
+                label="Rentangan Kedua Lengan"
+                value={extension}
+                min={0}
+                max={1}
+                step={0.01}
+                precision={2}
+                accent="green"
+                onChange={setExtension}
+                hint="0 = Rapat (I kecil, ω cepat) · 1 = Lebar (I besar, ω pelan)"
+                quickPicks={[
+                  { label: "Rapat (0.1)", val: 0.1 },
+                  { label: "Setengah (0.5)", val: 0.5 },
+                  { label: "Lebar (1.0)", val: 1.0 },
+                ]}
+              />
+
+              <Slider
+                label="Kecepatan Awal (ω₀)"
+                value={omega0}
+                min={1}
+                max={8}
+                step={0.5}
+                unit="rad/s"
+                accent="sky"
+                disabled={spinning}
+                onChange={setOmega0}
+              />
+
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={friction}
+                  onChange={(e) => setFriction(e.target.checked)}
+                  className="h-4 w-4 rounded accent-[#58CC02]"
+                />
+                <span>Sertakan sedikit gesekan es nyata</span>
+              </label>
+            </div>
+          </Panel>
+
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard
+              label="Momen Inersia (I)"
+              value={I.toFixed(3)}
+              unit="kg·m²"
+              color="amber"
+              sublabel="I = I_badan + 2·m·r²"
+            />
+            <StatCard
+              label="Kec. Sudut (ω)"
+              value={omegaRef.current.toFixed(2)}
+              unit="rad/s"
+              color="emerald"
+              sublabel="Makin kecil I, makin besar ω"
+            />
+            <StatCard
+              label="Momentum (L)"
+              value={LRef.current.toFixed(2)}
+              unit="kg·m²/s"
+              color="sky"
+              sublabel="L = I·ω (Kekal)"
+            />
+            <StatCard
+              label="Energi Kinetik (Ek)"
+              value={Ek.toFixed(1)}
+              unit="J"
+              color="rose"
+              sublabel="Ek = 1/2 I·ω²"
             />
           </div>
-        </Panel>
+        </div>
+
+        {/* Section 2: Stats & Charts */}
+        <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
+          <Panel title="Grafik Real-time (Kekekalan L)" icon="📈">
+            <LiveChart
+              series={[
+                { data: history.I, color: "#EAB308", label: "Inersia I", unit: "kg·m²" },
+                { data: history.omega, color: "#22C55E", label: "Kec. Sudut ω", unit: "rad/s" },
+                { data: history.L, color: "#0EA5E9", label: "Momentum L", unit: "kg·m²/s" },
+              ]}
+              height={95}
+            />
+          </Panel>
+        </div>
+
+        {/* Section 3: Theory & Mascot */}
+        <div className={`${mobileTab === "theory" ? "block" : "hidden"} lg:block space-y-3`}>
+          <div className="lg:hidden">
+            <Mascot
+              mood="amazed"
+              quote="Saat tangan penari ditarik mendekati badan, momen inersianya (I) turun drastis! Karena es licin dan tidak ada torsi luar, alam semesta memaksa putarannya (ω) melesat kencang agar L tetap sama!"
+              tip="Energi kinetik rotasi Ek = 1/2 I ω² justru bertambah saat tangan didekapkan!"
+            />
+          </div>
+
+          <Panel title="Rumus Fisika Terkait" icon="📘">
+            <div className="space-y-2 text-xs">
+              <FBlock
+                tex="I_1\omega_1 = I_2\omega_2 = L \quad (\tau_{\text{luar}} = 0)"
+                label="Hukum Kekekalan"
+                explanation="Momentum sudut awal sama persis dengan momentum sudut akhir saat tidak ada torsi luar."
+              />
+            </div>
+          </Panel>
+        </div>
       </div>
     </div>
   );

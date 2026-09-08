@@ -174,6 +174,7 @@ export default function StoolModule() {
   const [radius, setRadius] = useState<number>(0.85);
   const [omega0, setOmega0] = useState<number>(2.5);
   const [spinning, setSpinning] = useState<boolean>(false);
+  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
 
   const thetaRef = useRef<number>(0);
   const omegaRef = useRef<number>(0);
@@ -294,144 +295,203 @@ export default function StoolModule() {
           </div>
         </div>
 
-        {/* Mascot */}
-        <Mascot
-          mood="happy"
-          quote="Ini eksperimen fisika paling legendaris di kelas! Duduk di kursi putar sambil memegang dua barbel berat. Saat tangan ditarik ke dada, kamu akan berputar melesat kencang!"
-          tip="Momen inersia total sistem adalah I = I_kursi + 2·m·r². Karena r dikuadratkan, perubahan jarak tangan sedikit saja sudah melipatgandakan kecepatan putaranmu!"
-          mission={{
-            text: "Putar kursi, catat Keadaan 1, ubah jarak r, lalu catat Keadaan 2!",
-            actionLabel: "Tarik Tangan ke Dada 🤲",
-            onAction: () => {
-              if (!spinning) handleStartSpin();
-              setRadius(0.25);
-            },
-          }}
-        />
-      </div>
-
-      {/* Control & Verification Panel */}
-      <div className="lg:col-span-4 space-y-4">
-        <Panel title="Kontrol Bangku & Beban" icon="🪑">
-          <div className="space-y-4">
-            <Slider
-              label="Jarak Beban ke Poros (r)"
-              value={radius}
-              min={0.2}
-              max={1.1}
-              step={0.02}
-              unit="m"
-              accent="green"
-              onChange={setRadius}
-              hint="0.2 m = Beban menempel dada · 1.1 m = Rentangan penuh"
-              quickPicks={[
-                { label: "Dekap (0.25m)", val: 0.25 },
-                { label: "Setengah (0.65m)", val: 0.65 },
-                { label: "Rentang (1.0m)", val: 1.0 },
-              ]}
-            />
-            <Slider
-              label="Massa Barbel Tiap Tangan (m)"
-              value={dumbbellMass}
-              min={1}
-              max={6}
-              step={0.5}
-              unit="kg"
-              accent="amber"
-              onChange={setDumbbellMass}
-              hint="Beban besi yang digenggam di masing-masing tangan"
-            />
-            <Slider
-              label="Kec. Sudut Awal (ω₀)"
-              value={omega0}
-              min={1}
-              max={6}
-              step={0.5}
-              unit="rad/s"
-              accent="sky"
-              disabled={spinning}
-              onChange={setOmega0}
-            />
-          </div>
-        </Panel>
-
-        {/* Live Telemetry */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            label="Inersia Total (I)"
-            value={I.toFixed(3)}
-            unit="kg·m²"
-            color="amber"
-            sublabel="I = I₀ + 2·m·r²"
-          />
-          <StatCard
-            label="Kec. Sudut (ω)"
-            value={omegaRef.current.toFixed(2)}
-            unit="rad/s"
-            color="emerald"
-            sublabel="ω = L / I"
-          />
-          <StatCard
-            label="Momentum Sudut (L)"
-            value={LRef.current.toFixed(2)}
-            unit="kg·m²/s"
-            color="sky"
-            sublabel="L = I · ω (Kekal)"
-          />
-          <StatCard
-            label="Kondisi"
-            value={spinning ? "Berputar" : "Diam"}
-            color="purple"
-            sublabel="Gesekan Poros ≈ 0"
+        {/* Mascot (Desktop always visible) */}
+        <div className="hidden lg:block">
+          <Mascot
+            mood="happy"
+            quote="Ini eksperimen fisika paling legendaris di kelas! Duduk di kursi putar sambil memegang dua barbel berat. Saat tangan ditarik ke dada, kamu akan berputar melesat kencang!"
+            tip="Momen inersia total sistem adalah I = I_kursi + 2·m·r². Karena r dikuadratkan, perubahan jarak tangan sedikit saja sudah melipatgandakan kecepatan putaranmu!"
+            mission={{
+              text: "Putar kursi, catat Keadaan 1, ubah jarak r, lalu catat Keadaan 2!",
+              actionLabel: "Tarik Tangan ke Dada 🤲",
+              onAction: () => {
+                if (!spinning) handleStartSpin();
+                setRadius(0.25);
+              },
+            }}
           />
         </div>
+      </div>
 
-        {/* Numerical Verification Table */}
-        {snapshots.length > 0 && (
-          <Panel title="Tabel Verifikasi L₁ = L₂" icon="🧮">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[#E2E8F0] text-slate-500 font-extrabold pb-1">
-                    <th className="py-1">Keadaan</th>
-                    <th>I (kg·m²)</th>
-                    <th>ω (rad/s)</th>
-                    <th>L (kg·m²/s)</th>
-                  </tr>
-                </thead>
-                <tbody className="font-heading font-bold text-slate-800">
-                  {snapshots.map((s) => (
-                    <tr key={s.label} className="border-b border-slate-100">
-                      <td className="py-2 text-[#0284C7]">{s.label}</td>
-                      <td>{s.I.toFixed(3)}</td>
-                      <td>{s.omega.toFixed(2)}</td>
-                      <td>{s.L.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {/* Control & Verification Panel (Mobile Tabbed, Desktop Multi-Column) */}
+      <div className="lg:col-span-4 space-y-3">
+        {/* Mobile Segmented Switcher */}
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setMobileTab("controls")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "controls"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🎛️ Kontrol
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("stats")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "stats"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📊 Data & Tabel
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("theory")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "theory"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🦉 Tips & Rumus
+          </button>
+        </div>
+
+        {/* Section 1: Controls */}
+        <div className={`${mobileTab === "controls" ? "block" : "hidden"} lg:block space-y-3`}>
+          <Panel title="Kontrol Bangku & Beban" icon="🪑">
+            <div className="space-y-3">
+              <Slider
+                label="Jarak Beban ke Poros (r)"
+                value={radius}
+                min={0.2}
+                max={1.1}
+                step={0.02}
+                unit="m"
+                accent="green"
+                onChange={setRadius}
+                hint="0.2 m = Dekap dada · 1.1 m = Rentang lebar"
+                quickPicks={[
+                  { label: "Dekap (0.25m)", val: 0.25 },
+                  { label: "Setengah (0.65m)", val: 0.65 },
+                  { label: "Rentang (1.0m)", val: 1.0 },
+                ]}
+              />
+              <Slider
+                label="Massa Barbel Tiap Tangan (m)"
+                value={dumbbellMass}
+                min={1}
+                max={6}
+                step={0.5}
+                unit="kg"
+                accent="amber"
+                onChange={setDumbbellMass}
+              />
+              <Slider
+                label="Kec. Sudut Awal (ω₀)"
+                value={omega0}
+                min={1}
+                max={6}
+                step={0.5}
+                unit="rad/s"
+                accent="sky"
+                disabled={spinning}
+                onChange={setOmega0}
+              />
             </div>
-
-            {snapshots.length === 2 && (
-              <div className="mt-3 rounded-xl border-2 border-[#BBF7D0] bg-[#F0FDF4] p-3 text-xs text-[#15803D] font-bold animate-pop-in">
-                🎉 Selisih <F tex="\Delta L = |L_1 - L_2|" /> ={" "}
-                {Math.abs(snapshots[0].L - snapshots[1].L).toFixed(4)} kg·m²/s.
-                Hukum Kekekalan Momentum Sudut terbukti 100% valid!
-              </div>
-            )}
           </Panel>
-        )}
 
-        {/* Formula */}
-        <Panel title="Prinsip Fisika" icon="📘">
-          <div className="space-y-3">
-            <FBlock
-              tex="I_1\omega_1 = I_2\omega_2 = \text{konstan}"
-              label="Hukum Kekekalan"
-              explanation="Saat tangan didekatkan ke dada (r mengecil), inersia I turun dan ω melesat naik!"
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard
+              label="Inersia Total (I)"
+              value={I.toFixed(3)}
+              unit="kg·m²"
+              color="amber"
+              sublabel="I = I₀ + 2·m·r²"
+            />
+            <StatCard
+              label="Kec. Sudut (ω)"
+              value={omegaRef.current.toFixed(2)}
+              unit="rad/s"
+              color="emerald"
+              sublabel="ω = L / I"
+            />
+            <StatCard
+              label="Momentum (L)"
+              value={LRef.current.toFixed(2)}
+              unit="kg·m²/s"
+              color="sky"
+              sublabel="L = I · ω (Kekal)"
+            />
+            <StatCard
+              label="Kondisi"
+              value={spinning ? "Berputar" : "Diam"}
+              color="purple"
+              sublabel="Gesekan Poros ≈ 0"
             />
           </div>
-        </Panel>
+        </div>
+
+        {/* Section 2: Numerical Verification Table */}
+        <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
+          {snapshots.length > 0 ? (
+            <Panel title="Tabel Verifikasi L₁ = L₂" icon="🧮">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[#E2E8F0] text-slate-500 font-extrabold pb-1">
+                      <th className="py-1">Keadaan</th>
+                      <th>I (kg·m²)</th>
+                      <th>ω (rad/s)</th>
+                      <th>L (kg·m²/s)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="font-heading font-bold text-slate-800">
+                    {snapshots.map((s) => (
+                      <tr key={s.label} className="border-b border-slate-100">
+                        <td className="py-2 text-[#0284C7]">{s.label}</td>
+                        <td>{s.I.toFixed(3)}</td>
+                        <td>{s.omega.toFixed(2)}</td>
+                        <td>{s.L.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {snapshots.length === 2 && (
+                <div className="mt-3 rounded-xl border-2 border-[#BBF7D0] bg-[#F0FDF4] p-3 text-xs text-[#15803D] font-bold animate-pop-in">
+                  🎉 Selisih <F tex="\Delta L = |L_1 - L_2|" /> ={" "}
+                  {Math.abs(snapshots[0].L - snapshots[1].L).toFixed(4)} kg·m²/s.
+                  Hukum Kekekalan Momentum Sudut terbukti 100% valid!
+                </div>
+              )}
+            </Panel>
+          ) : (
+            <Panel title="Tabel Verifikasi L₁ = L₂" icon="🧮">
+              <p className="text-xs text-slate-500 font-medium">
+                Klik tombol <strong>📸 Catat Keadaan</strong> di bawah 3D view saat berputar untuk membandingkan L sebelum dan sesudah lengan ditarik!
+              </p>
+            </Panel>
+          )}
+        </div>
+
+        {/* Section 3: Theory & Mascot */}
+        <div className={`${mobileTab === "theory" ? "block" : "hidden"} lg:block space-y-3`}>
+          <div className="lg:hidden">
+            <Mascot
+              mood="happy"
+              quote="Duduk di kursi putar sambil memegang dua barbel berat. Saat tangan ditarik ke dada, kamu akan berputar melesat kencang!"
+              tip="Momen inersia total sistem adalah I = I_kursi + 2·m·r²."
+            />
+          </div>
+
+          <Panel title="Prinsip Fisika" icon="📘">
+            <div className="space-y-2 text-xs">
+              <FBlock
+                tex="I_1\omega_1 = I_2\omega_2 = \text{konstan}"
+                label="Hukum Kekekalan"
+                explanation="Saat tangan didekatkan ke dada (r mengecil), inersia I turun dan ω melesat naik!"
+              />
+            </div>
+          </Panel>
+        </div>
       </div>
     </div>
   );

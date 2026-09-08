@@ -8,28 +8,51 @@ import { Panel, StatCard } from "../components/ui/Panel";
 import { FBlock, F } from "../components/ui/Formula";
 import { LiveChart } from "../components/ui/LiveChart";
 import { Mascot } from "../components/ui/Mascot";
-import { Html, Trail } from "@react-three/drei";
+import { Billboard, Text } from "@react-three/drei";
 import { sound, triggerHaptic } from "../utils/audio";
 
-function RightHandRule3D({
+function CurlDirectionRing({
   radius,
-  omega,
+  ccw,
 }: {
   radius: number;
-  omega: number;
+  ccw: boolean;
 }) {
-  const isUp = omega >= 0;
+  const ringRef = useRef<THREE.Group>(null);
+  useFrame((_, dt) => {
+    if (ringRef.current) {
+      ringRef.current.rotation.y += (ccw ? 1 : -1) * dt * 1.5;
+    }
+  });
+
+  const arrowCount = 4;
+
   return (
-    <group position={[0, 0.05, 0]}>
-      {/* Curved rotation direction arrow */}
+    <group ref={ringRef} position={[0, 0.05, 0]}>
+      {/* Luminous Guide Ring */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[radius * 0.45, radius * 0.49, 48]} />
         <meshBasicMaterial
-          color={isUp ? "#10B981" : "#EF4444"}
+          color={ccw ? "#10B981" : "#F59E0B"}
           transparent
-          opacity={0.6}
+          opacity={0.45}
         />
       </mesh>
+      {/* 4 Direction Indicator Chevrons */}
+      {Array.from({ length: arrowCount }).map((_, i) => {
+        const ang = (i * 2 * Math.PI) / arrowCount;
+        const r = radius * 0.47;
+        return (
+          <mesh
+            key={i}
+            position={[r * Math.cos(ang), 0.005, r * Math.sin(ang)]}
+            rotation={[-Math.PI / 2, 0, ang + (ccw ? Math.PI / 2 : -Math.PI / 2)]}
+          >
+            <coneGeometry args={[0.04, 0.1, 8]} />
+            <meshBasicMaterial color={ccw ? "#10B981" : "#F59E0B"} />
+          </mesh>
+        );
+      })}
     </group>
   );
 }
@@ -74,7 +97,9 @@ function Scene({
 
   const t = thetaRef.current;
   const pos: [number, number, number] = [radius * Math.cos(t), 0.22, radius * Math.sin(t)];
-  const tangent = new THREE.Vector3(-Math.sin(t), 0, Math.cos(t)).multiplyScalar(Math.sign(omega) || 1);
+  const tangent = new THREE.Vector3(-Math.sin(t), 0, Math.cos(t)).multiplyScalar(
+    Math.sign(omega) || 1
+  );
   const v = Math.abs(omega) * radius;
   const p = mass * v;
   const L = mass * radius * radius * omega;
@@ -82,76 +107,87 @@ function Scene({
   const rDir: [number, number, number] =
     radius > 0.001 ? [pos[0] / radius, 0, pos[2] / radius] : [1, 0, 0];
 
+  const L_length = Math.min(2.5, 0.6 + Math.abs(L) * 0.42);
+  const isUp = omega >= 0;
+
   return (
     <group>
-      {/* Turntable Platter */}
+      {/* Platter Studio Base */}
       <group ref={turntableRef} position={[0, 0.02, 0]}>
         <mesh receiveShadow>
           <cylinderGeometry args={[2.55, 2.6, 0.04, 64]} />
-          <meshStandardMaterial color="#F1F5F9" metalness={0.2} roughness={0.7} />
+          <meshStandardMaterial color="#FFFFFF" metalness={0.15} roughness={0.6} />
         </mesh>
-        {/* Degree Markings on Turntable */}
+        {/* Degree Ticks */}
         {Array.from({ length: 12 }).map((_, i) => {
           const ang = (i * Math.PI) / 6;
           return (
-            <mesh key={i} position={[2.2 * Math.cos(ang), 0.025, 2.2 * Math.sin(ang)]} rotation={[-Math.PI / 2, 0, ang]}>
-              <planeGeometry args={[0.04, 0.25]} />
-              <meshBasicMaterial color="#94A3B8" />
+            <mesh
+              key={i}
+              position={[2.2 * Math.cos(ang), 0.022, 2.2 * Math.sin(ang)]}
+              rotation={[-Math.PI / 2, 0, ang]}
+            >
+              <planeGeometry args={[0.03, 0.22]} />
+              <meshBasicMaterial color="#CBD5E1" />
             </mesh>
           );
         })}
       </group>
 
-      {/* Orbit Ring Path */}
-      <mesh position={[0, 0.045, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* Orbit Ring Track */}
+      <mesh position={[0, 0.042, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[radius - 0.012, radius + 0.012, 96]} />
-        <meshBasicMaterial color="#1CB0F6" transparent opacity={0.6} />
+        <meshBasicMaterial color="#BAE6FD" transparent opacity={0.7} />
       </mesh>
 
-      {/* Central Axis O */}
-      <mesh position={[0, 0.45, 0]} castShadow>
-        <cylinderGeometry args={[0.04, 0.04, 0.9, 20]} />
-        <meshStandardMaterial color="#475569" metalness={0.9} roughness={0.2} />
+      {/* Kaidah Tangan Kanan Rotating Ring */}
+      <CurlDirectionRing radius={radius} ccw={isUp} />
+
+      {/* Center Pivot Axis O */}
+      <mesh position={[0, 0.4, 0]} castShadow>
+        <cylinderGeometry args={[0.045, 0.045, 0.8, 20]} />
+        <meshStandardMaterial color="#64748B" metalness={0.8} roughness={0.2} />
       </mesh>
-      <mesh position={[0, 0.9, 0]}>
-        <sphereGeometry args={[0.07, 16, 16]} />
-        <meshStandardMaterial color="#FFC800" metalness={0.5} roughness={0.2} />
+      <mesh position={[0, 0.8, 0]}>
+        <sphereGeometry args={[0.075, 16, 16]} />
+        <meshStandardMaterial color="#FFC800" metalness={0.6} roughness={0.3} />
       </mesh>
-      <Html position={[0, 1.05, 0]} center>
-        <div className="rounded-lg bg-white/90 border border-slate-300 px-2 py-0.5 text-[10px] font-extrabold text-slate-700 shadow-sm">
+      <Billboard position={[0, 0.98, 0]}>
+        <mesh position={[0, 0, -0.01]}>
+          <planeGeometry args={[0.7, 0.2]} />
+          <meshBasicMaterial color="#FFFFFF" transparent opacity={0.9} />
+        </mesh>
+        <Text fontSize={0.11} color="#334155" anchorX="center" anchorY="middle" fontWeight="bold">
           Poros O
-        </div>
-      </Html>
+        </Text>
+      </Billboard>
 
-      {/* Connecting Telescopic Rod */}
+      {/* Connecting Rod */}
       <mesh position={[pos[0] / 2, 0.12, pos[2] / 2]} rotation={[0, -t, 0]}>
-        <boxGeometry args={[radius, 0.028, 0.028]} />
-        <meshStandardMaterial color="#94A3B8" metalness={0.6} roughness={0.3} />
+        <boxGeometry args={[radius, 0.026, 0.026]} />
+        <meshStandardMaterial color="#94A3B8" metalness={0.7} roughness={0.3} />
       </mesh>
 
-      {/* Particle m with Glowing Trail */}
+      {/* The Particle Sphere */}
       <group ref={ballRef} position={pos}>
-        <Trail width={1.8} length={7} color="#38BDF8" attenuation={(w) => w}>
-          <mesh castShadow>
-            <sphereGeometry args={[0.18, 32, 32]} />
-            <meshStandardMaterial
-              color="#FF9600"
-              metalness={0.3}
-              roughness={0.3}
-              emissive="#FF9600"
-              emissiveIntensity={0.25}
-            />
-          </mesh>
-        </Trail>
-        <Html position={[0, 0.35, 0]} center>
-          <div className="rounded-full bg-[#FF9600] px-2 py-0.5 text-[11px] font-heading font-bold text-white shadow">
-            m = {mass} kg
-          </div>
-        </Html>
+        <mesh castShadow>
+          <sphereGeometry args={[0.18, 32, 32]} />
+          <meshStandardMaterial
+            color="#FF9600"
+            metalness={0.25}
+            roughness={0.3}
+            emissive="#FF9600"
+            emissiveIntensity={0.25}
+          />
+        </mesh>
+        {/* Glow rim */}
+        <mesh>
+          <sphereGeometry args={[0.195, 16, 16]} />
+          <meshBasicMaterial color="#FFC800" wireframe transparent opacity={0.3} />
+        </mesh>
       </group>
 
-      {/* Kaidah Tangan Kanan Helper Ring */}
-      <RightHandRule3D radius={radius} omega={omega} />
+      {/* ================= 3D VECTOR ARROWS ================= */}
 
       {/* Vector r (Posisi) */}
       {showR && (
@@ -159,10 +195,9 @@ function Scene({
           from={[0, 0.22, 0]}
           direction={rDir}
           length={Math.max(radius, 0.1)}
-          color="#1CB0F6"
+          color="#0284C7"
           radius={0.02}
-          label="r (Jari-jari)"
-          labelColor="#0284C7"
+          showLabel={false}
         />
       )}
 
@@ -173,9 +208,8 @@ function Scene({
           direction={[tangent.x, tangent.y, tangent.z]}
           length={Math.min(1.5, 0.4 + v * 0.22)}
           color="#10B981"
-          radius={0.02}
-          label="v = ω·r"
-          labelColor="#047857"
+          radius={0.022}
+          showLabel={false}
         />
       )}
 
@@ -185,24 +219,42 @@ function Scene({
           from={[pos[0], pos[1] + 0.28, pos[2]]}
           direction={[tangent.x, tangent.y, tangent.z]}
           length={Math.min(1.6, 0.35 + p * 0.25)}
-          color="#F59E0B"
-          radius={0.02}
-          label="p = m·v"
-          labelColor="#B45309"
+          color="#F97316"
+          radius={0.022}
+          showLabel={false}
         />
       )}
 
-      {/* Vector L (Momentum Sudut di Sumbu Vertikal) */}
+      {/* Vector L (Momentum Sudut di Sumbu Vertikal) — BOLD & CLEAR! */}
       {showL && (
-        <Arrow3D
-          from={[0, 0.45, 0]}
-          direction={[0, Math.sign(L) || 1, 0]}
-          length={Math.min(2.4, 0.45 + Math.abs(L) * 0.4)}
-          color="#9333EA"
-          radius={0.032}
-          label={omega >= 0 ? "L = r × p (Ke Atas)" : "L = r × p (Ke Bawah)"}
-          labelColor="#7E22CE"
-        />
+        <group>
+          <Arrow3D
+            from={[0, 0.4, 0]}
+            direction={[0, isUp ? 1 : -1, 0]}
+            length={L_length}
+            color="#9333EA"
+            radius={0.036}
+            showLabel={false}
+          />
+          {/* Billboard Label directly anchored to the vertical vector */}
+          <Billboard
+            position={[0, isUp ? 0.4 + L_length + 0.2 : 0.4 - L_length - 0.2, 0]}
+          >
+            <mesh position={[0, 0, -0.01]}>
+              <planeGeometry args={[1.5, 0.3]} />
+              <meshBasicMaterial color="#FAF5FF" />
+            </mesh>
+            <Text
+              fontSize={0.14}
+              color="#7E22CE"
+              anchorX="center"
+              anchorY="middle"
+              fontWeight="bold"
+            >
+              {isUp ? "▲ L = r × p (Ke Atas)" : "▼ L = r × p (Ke Bawah)"}
+            </Text>
+          </Billboard>
+        </group>
       )}
     </group>
   );
@@ -221,6 +273,9 @@ export default function ParticleModule() {
   const [showP, setShowP] = useState<boolean>(true);
   const [showL, setShowL] = useState<boolean>(true);
 
+  // Mobile compact segmented tab
+  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
+
   const thetaRef = useRef<number>(0);
   const [history, setHistory] = useState<{ L: number[]; v: number[] }>({ L: [], v: [] });
 
@@ -233,19 +288,19 @@ export default function ParticleModule() {
   useEffect(() => {
     const id = setInterval(() => {
       setHistory((h) => ({
-        L: [...h.L.slice(-50), Math.abs(L)],
-        v: [...h.v.slice(-50), v],
+        L: [...h.L.slice(-40), Math.abs(L)],
+        v: [...h.v.slice(-40), v],
       }));
     }, 200);
     return () => clearInterval(id);
   }, [L, v]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-      {/* 3D Viewport */}
-      <div className="lg:col-span-8 flex flex-col gap-4">
-        <div className="relative h-[420px] sm:h-[500px] w-full overflow-hidden rounded-3xl border-2 border-[#E5E7EB] bg-[#F8FAFC] shadow-[0_4px_0_0_#E5E7EB]">
-          <SceneShell camera={{ position: [3.8, 3.2, 4.6], fov: 42 }}>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5">
+      {/* 3D Viewport (Centerpiece) */}
+      <div className="lg:col-span-7 flex flex-col gap-2.5">
+        <div className="relative h-[340px] sm:h-[420px] lg:h-[480px] w-full overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-[#E5E7EB] bg-[#F8FAFC] shadow-xs">
+          <SceneShell camera={{ position: [3.4, 2.9, 4.2], fov: 42 }}>
             <Scene
               mass={mass}
               radius={radius}
@@ -259,17 +314,87 @@ export default function ParticleModule() {
             />
           </SceneShell>
 
-          {/* Direction & Status Pill */}
-          <div className="absolute top-4 left-4 z-10 flex items-center gap-2 rounded-2xl bg-white/95 px-3 py-1.5 shadow-md border-2 border-[#E5E7EB] backdrop-blur-xs">
-            <span className="text-sm">{ccw ? "↺" : "↻"}</span>
-            <span className="text-xs font-heading font-bold text-slate-700">
-              {ccw ? "Putaran CCW (L ke Atas 👍)" : "Putaran CW (L ke Bawah 👎)"}
-            </span>
+          {/* Top Floating Status & Kaidah Tangan Kanan HUD */}
+          <div className="absolute top-2.5 left-2.5 z-10 flex flex-wrap items-center gap-1.5">
+            <div className="flex items-center gap-1.5 rounded-xl bg-white/95 px-2.5 py-1 shadow-xs border border-[#E5E7EB] backdrop-blur-xs">
+              <span className="text-base">{ccw ? "👍" : "👎"}</span>
+              <span className="font-heading text-xs font-bold text-slate-800">
+                {ccw ? "Kaidah Tangan Kanan: L ke Atas" : "Putaran CW: L ke Bawah"}
+              </span>
+            </div>
+            <div className="rounded-xl bg-[#FAF5FF] border border-[#E9D5FF] px-2.5 py-1 text-xs font-heading font-extrabold text-[#7E22CE]">
+              L = {Math.abs(L).toFixed(2)} kg·m²/s
+            </div>
           </div>
 
-          {/* Floating Controls */}
-          <div className="absolute bottom-4 left-4 right-4 z-10 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/95 p-3 shadow-md border-2 border-[#E5E7EB] backdrop-blur-xs">
-            <div className="flex gap-2">
+          {/* Top-Right Interactive Vector Legend Chips (Tap to Toggle!) */}
+          <div className="absolute top-2.5 right-2.5 z-10 flex flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                sound.playPop(520);
+                setShowL(!showL);
+              }}
+              className={`rounded-lg px-2 py-0.8 text-[11px] font-heading font-bold border transition shadow-xs flex items-center gap-1.5 ${
+                showL
+                  ? "bg-[#FAF5FF] text-[#7E22CE] border-[#D8B4FE]"
+                  : "bg-white/80 text-slate-400 border-slate-200 line-through"
+              }`}
+              title="Klik untuk tampilkan/sembunyikan vektor L"
+            >
+              <span className="h-2 w-2 rounded-full bg-[#9333EA]" />
+              <span>Vektor L: {Math.abs(L).toFixed(2)}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                sound.playPop(500);
+                setShowR(!showR);
+              }}
+              className={`rounded-lg px-2 py-0.8 text-[11px] font-heading font-bold border transition shadow-xs flex items-center gap-1.5 ${
+                showR
+                  ? "bg-[#F0F9FF] text-[#0284C7] border-[#BAE6FD]"
+                  : "bg-white/80 text-slate-400 border-slate-200 line-through"
+              }`}
+            >
+              <span className="h-2 w-2 rounded-full bg-[#0284C7]" />
+              <span>Vektor r: {radius.toFixed(2)} m</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                sound.playPop(480);
+                setShowV(!showV);
+              }}
+              className={`rounded-lg px-2 py-0.8 text-[11px] font-heading font-bold border transition shadow-xs flex items-center gap-1.5 ${
+                showV
+                  ? "bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]"
+                  : "bg-white/80 text-slate-400 border-slate-200 line-through"
+              }`}
+            >
+              <span className="h-2 w-2 rounded-full bg-[#10B981]" />
+              <span>Vektor v: {v.toFixed(2)} m/s</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                sound.playPop(460);
+                setShowP(!showP);
+              }}
+              className={`rounded-lg px-2 py-0.8 text-[11px] font-heading font-bold border transition shadow-xs flex items-center gap-1.5 ${
+                showP
+                  ? "bg-[#FFF7ED] text-[#EA580C] border-[#FFEDD5]"
+                  : "bg-white/80 text-slate-400 border-slate-200 line-through"
+              }`}
+            >
+              <span className="h-2 w-2 rounded-full bg-[#F97316]" />
+              <span>Vektor p: {p.toFixed(2)}</span>
+            </button>
+          </div>
+
+          {/* Bottom Floating Controls */}
+          <div className="absolute bottom-2.5 left-2.5 right-2.5 z-10 flex flex-wrap items-center justify-between gap-1.5 rounded-xl sm:rounded-2xl bg-white/95 p-2 shadow-xs border border-[#E5E7EB] backdrop-blur-xs">
+            <div className="flex gap-1.5">
               <button
                 type="button"
                 onClick={() => {
@@ -277,7 +402,7 @@ export default function ParticleModule() {
                   triggerHaptic("light");
                   setRunning(!running);
                 }}
-                className={`btn-duo px-4 py-2 text-xs ${
+                className={`btn-duo px-3 py-1.5 text-xs ${
                   running ? "btn-duo-sky" : "btn-duo-green"
                 }`}
               >
@@ -290,161 +415,177 @@ export default function ParticleModule() {
                   triggerHaptic("medium");
                   setCcw(!ccw);
                 }}
-                className="btn-duo btn-duo-white px-3 py-2 text-xs"
+                className="btn-duo btn-duo-white px-2.5 py-1.5 text-xs"
               >
-                Balik Arah Putaran 🔄
+                Balik Arah {ccw ? "↺" : "↻"}
               </button>
             </div>
-
-            {/* Vector Toggles */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setShowR(!showR)}
-                className={`rounded-lg px-2 py-1 text-[11px] font-bold border transition ${
-                  showR ? "bg-[#E0F2FE] text-[#0284C7] border-[#BAE6FD]" : "bg-white text-slate-400 border-slate-200"
-                }`}
-              >
-                Vektor r
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowV(!showV)}
-                className={`rounded-lg px-2 py-1 text-[11px] font-bold border transition ${
-                  showV ? "bg-[#DCFCE7] text-[#16A34A] border-[#BBF7D0]" : "bg-white text-slate-400 border-slate-200"
-                }`}
-              >
-                Vektor v
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowP(!showP)}
-                className={`rounded-lg px-2 py-1 text-[11px] font-bold border transition ${
-                  showP ? "bg-[#FEFCE8] text-[#CA8A04] border-[#FEF08A]" : "bg-white text-slate-400 border-slate-200"
-                }`}
-              >
-                Vektor p
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowL(!showL)}
-                className={`rounded-lg px-2 py-1 text-[11px] font-bold border transition ${
-                  showL ? "bg-[#FAF5FF] text-[#9333EA] border-[#E9D5FF]" : "bg-white text-slate-400 border-slate-200"
-                }`}
-              >
-                Vektor L
-              </button>
+            <div className="text-[10px] font-extrabold text-slate-500 hidden sm:block">
+              {running ? "Simulasi Berjalan" : "Terjeda"}
             </div>
           </div>
         </div>
 
-        {/* Mascot */}
-        <Mascot
-          mood="thinking"
-          quote="Gunakan Kaidah Tangan Kanan: tekuk empat jarimu mengikuti arah putaran partikel, dan ibu jarimu (jempol) akan menunjuk lurus ke arah vektor momentum sudut L! 👍"
-          tip="Momen inersia partikel titik adalah I = m·r². Jika jari-jari lintasan kamu jadikan 2 kali lipat, maka momen inersianya melompat jadi 4 kali lipat!"
-          mission={{
-            text: "Coba balik arah putaran menjadi searah jarum jam (CW)!",
-            actionLabel: "Balik Arah ↻",
-            onAction: () => setCcw(false),
-          }}
-        />
+        {/* Mascot Explainer (Desktop always visible, mobile compact) */}
+        <div className="hidden lg:block">
+          <Mascot
+            mood="thinking"
+            quote="Kaidah Tangan Kanan: Lekukan empat jarimu searah putaran partikel, maka ibu jarimu (jempol) menunjuk langsung ke arah vektor L di sumbu putar!"
+            tip="Momentum sudut partikel adalah L = r × p = m·r·v. Jika jari-jari r dilipatgandakan, momen inersia melonjak 4 kali lipat karena r dikuadratkan!"
+            mission={{
+              text: "Coba balik arah putaran menjadi searah jarum jam (CW)!",
+              actionLabel: "Balik Arah ↻",
+              onAction: () => setCcw(false),
+            }}
+          />
+        </div>
       </div>
 
-      {/* Control & Telemetry */}
-      <div className="lg:col-span-4 space-y-4">
-        <Panel title="Parameter Partikel" icon="🎯">
-          <div className="space-y-4">
-            <Slider
-              label="Massa Partikel (m)"
-              value={mass}
-              min={0.2}
-              max={3.0}
-              step={0.1}
-              unit="kg"
-              accent="amber"
-              onChange={setMass}
-              hint="Massa bola yang bergerak melingkar"
-            />
-            <Slider
-              label="Jari-jari Lintasan (r)"
-              value={radius}
-              min={0.4}
-              max={2.4}
-              step={0.05}
-              unit="m"
-              accent="sky"
-              onChange={setRadius}
-              hint="Jarak partikel dari poros pusat O"
-            />
-            <Slider
-              label="Kecepatan Sudut (ω)"
-              value={omegaMag}
-              min={0.2}
-              max={5.0}
-              step={0.1}
-              unit="rad/s"
-              accent="green"
-              onChange={setOmegaMag}
-              hint="Laju sudut rotasi partikel"
-            />
-          </div>
-        </Panel>
-
-        {/* Live Telemetry */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            label="Kelajuan Linear (v)"
-            value={v.toFixed(2)}
-            unit="m/s"
-            color="emerald"
-            sublabel="v = ω · r"
-          />
-          <StatCard
-            label="Momentum Linear (p)"
-            value={p.toFixed(2)}
-            unit="kg·m/s"
-            color="amber"
-            sublabel="p = m · v"
-          />
-          <StatCard
-            label="Momen Inersia (I)"
-            value={I.toFixed(2)}
-            unit="kg·m²"
-            color="sky"
-            sublabel="I = m · r²"
-          />
-          <StatCard
-            label="Momentum Sudut (L)"
-            value={Math.abs(L).toFixed(2)}
-            unit="kg·m²/s"
-            color="purple"
-            sublabel="L = I · ω = r × p"
-          />
+      {/* Control & Data Panel (Mobile Tabbed, Desktop Multi-Column) */}
+      <div className="lg:col-span-5 flex flex-col gap-2.5">
+        {/* Mobile Segmented Switcher (Visible only on mobile/tablet) */}
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setMobileTab("controls")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "controls"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🎛️ Kontrol
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("stats")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "stats"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📊 Grafik & Data
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("theory")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "theory"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🦉 Tips & Rumus
+          </button>
         </div>
 
-        {/* Chart */}
-        <Panel title="Grafik Real-time" icon="📈">
-          <LiveChart
-            series={[
-              { data: history.L, color: "#9333EA", label: "|L|", unit: "kg·m²/s" },
-              { data: history.v, color: "#16A34A", label: "v", unit: "m/s" },
-            ]}
-          />
-        </Panel>
+        {/* Controls Section (Shown on desktop OR mobile tab === 'controls') */}
+        <div className={`${mobileTab === "controls" ? "block" : "hidden"} lg:block space-y-3`}>
+          <Panel title="Parameter Partikel" icon="🎯">
+            <div className="space-y-3">
+              <Slider
+                label="Massa Partikel (m)"
+                value={mass}
+                min={0.2}
+                max={3.0}
+                step={0.1}
+                unit="kg"
+                accent="amber"
+                onChange={setMass}
+              />
+              <Slider
+                label="Jari-jari Lintasan (r)"
+                value={radius}
+                min={0.4}
+                max={2.4}
+                step={0.05}
+                unit="m"
+                accent="sky"
+                onChange={setRadius}
+                hint="Jarak partikel ke sumbu pusat"
+              />
+              <Slider
+                label="Kecepatan Sudut (ω)"
+                value={omegaMag}
+                min={0.2}
+                max={5.0}
+                step={0.1}
+                unit="rad/s"
+                accent="green"
+                onChange={setOmegaMag}
+              />
+            </div>
+          </Panel>
 
-        {/* Formula breakdown */}
-        <Panel title="Substitusi Nilai Langsung" icon="📐">
-          <div className="space-y-2 text-xs font-medium text-slate-700">
-            <FBlock
-              tex={`L = m \\cdot r^2 \\cdot \\omega = ${mass} \\times (${radius.toFixed(2)})^2 \\times ${omegaMag.toFixed(1)} = ${Math.abs(L).toFixed(2)}\\text{ kg}\\cdot\\text{m}^2/\\text{s}`}
-              label="Hitungan Nyata"
+          {/* Quick Realtime Stats Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard
+              label="Kecepatan (v)"
+              value={v.toFixed(2)}
+              unit="m/s"
+              color="emerald"
+              sublabel="v = ω · r"
             />
-            <p className="text-slate-500 text-[11px] leading-relaxed">
-              Karena vektor <F tex="\vec r" /> tegak lurus terhadap <F tex="\vec v" />, maka besar momentum sudutnya sederhana: <F tex="L = mvr" />.
-            </p>
+            <StatCard
+              label="Momentum (p)"
+              value={p.toFixed(2)}
+              unit="kg·m/s"
+              color="amber"
+              sublabel="p = m · v"
+            />
+            <StatCard
+              label="Inersia (I)"
+              value={I.toFixed(2)}
+              unit="kg·m²"
+              color="sky"
+              sublabel="I = m · r²"
+            />
+            <StatCard
+              label="Momentum Sudut (L)"
+              value={Math.abs(L).toFixed(2)}
+              unit="kg·m²/s"
+              color="purple"
+              sublabel="L = I · ω"
+            />
           </div>
-        </Panel>
+        </div>
+
+        {/* Stats & Charts Section (Shown on desktop OR mobile tab === 'stats') */}
+        <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
+          <Panel title="Grafik Real-time (|L| & v)" icon="📈">
+            <LiveChart
+              series={[
+                { data: history.L, color: "#9333EA", label: "|L|", unit: "kg·m²/s" },
+                { data: history.v, color: "#16A34A", label: "v", unit: "m/s" },
+              ]}
+              height={95}
+            />
+          </Panel>
+        </div>
+
+        {/* Theory & Formula Section (Shown on desktop OR mobile tab === 'theory') */}
+        <div className={`${mobileTab === "theory" ? "block" : "hidden"} lg:block space-y-3`}>
+          <div className="lg:hidden">
+            <Mascot
+              mood="thinking"
+              quote="Kaidah Tangan Kanan: Lekukan empat jarimu searah putaran partikel, maka ibu jarimu (jempol) menunjuk langsung ke arah vektor L di sumbu putar!"
+              tip="Momentum sudut partikel adalah L = r × p = m·r·v."
+            />
+          </div>
+
+          <Panel title="Substitusi Nilai Langsung" icon="📐">
+            <div className="space-y-1.5 text-xs text-slate-700">
+              <FBlock
+                tex={`L = m \\cdot r^2 \\cdot \\omega = ${mass} \\times (${radius.toFixed(2)})^2 \\times ${omegaMag.toFixed(1)} = ${Math.abs(L).toFixed(2)}\\text{ kg}\\cdot\\text{m}^2/\\text{s}`}
+                label="Kalkulasi"
+              />
+              <p className="text-[11px] text-slate-500 font-medium">
+                Vektor <F tex="\vec L" /> tegak lurus bidang putaran sesuai aturan perkalian silang <F tex="\vec r \times \vec p" />.
+              </p>
+            </div>
+          </Panel>
+        </div>
       </div>
     </div>
   );

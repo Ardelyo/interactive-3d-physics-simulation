@@ -209,6 +209,7 @@ export default function DiverModule() {
   const [jumpPower, setJumpPower] = useState<number>(3.2);
   const [tuck, setTuck] = useState<number>(0.85);
   const [phase, setPhase] = useState<"ready" | "flying" | "entered">("ready");
+  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
 
   const flight = useRef<FlightState>({ t: 0, x: 0.45, y: boardHeight, vy: 0, theta: 0 });
   const L = useRef<number>(0);
@@ -379,121 +380,175 @@ export default function DiverModule() {
           </div>
         </div>
 
-        {/* Mascot */}
-        <Mascot
-          mood="amazed"
-          quote="Saat melayang di udara, gaya gravitasi bekerja tepat di pusat massa sehingga torsi luarnya NOL (τ = 0)! Momen inersia peloncat berkurang dari 11 kg·m² menjadi cuma 2.4 kg·m² saat meringkuk (tuck) — sehingga putarannya jadi super cepat!"
-          tip="Trik atlet profesional: lakukan posisi tuck rapat saat di puncak ketinggian untuk mengumpulkan putaran salto sebanyak-banyaknya, lalu buka luruskan tubuh (I membesar, putaran melambat) tepat sebelum menyentuh air agar masuk tegak lurus!"
-          mission={{
-            text: "Coba loncat, pasang tuck = 1 saat melayang, lalu buka ke 0 tepat sebelum masuk air!",
-            actionLabel: "Uji Salto Pro 🥇",
-            onAction: () => {
-              handleJump();
-              setTimeout(() => setTuck(1.0), 300);
-              setTimeout(() => setTuck(0.05), 1100);
-            },
-          }}
-        />
-      </div>
-
-      {/* Control & Telemetry */}
-      <div className="lg:col-span-4 space-y-4">
-        <Panel title="Parameter Loncatan" icon="🤸">
-          <div className="space-y-4">
-            <Slider
-              label="Bentuk Tubuh (Tuck / Meringkuk)"
-              value={tuck}
-              min={0}
-              max={1}
-              step={0.01}
-              precision={2}
-              accent="green"
-              onChange={setTuck}
-              hint="0 = Lurus (I besar, putaran pelan) · 1 = Meringkuk bulat (I kecil, putaran ngebut)"
-              quickPicks={[
-                { label: "Lurus (0.05)", val: 0.05 },
-                { label: "Pike (0.5)", val: 0.5 },
-                { label: "Tuck (0.95)", val: 0.95 },
-              ]}
-            />
-            <Slider
-              label="Tolakan Vertikal (v₀y)"
-              value={jumpPower}
-              min={1.5}
-              max={5.5}
-              step={0.1}
-              unit="m/s"
-              accent="sky"
-              disabled={phase !== "ready"}
-              onChange={setJumpPower}
-              hint="Kekuatan tolakan kaki dari papan lentur"
-            />
-            <Slider
-              label="Putaran Awal Salto (ω₀)"
-              value={omega0}
-              min={1.0}
-              max={6.0}
-              step={0.2}
-              unit="rad/s"
-              accent="purple"
-              disabled={phase !== "ready"}
-              onChange={setOmega0}
-            />
-          </div>
-        </Panel>
-
-        {/* Telemetry */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            label="Inersia Tubuh (I)"
-            value={I.toFixed(2)}
-            unit="kg·m²"
-            color="amber"
-            sublabel="Turun saat meringkuk"
-          />
-          <StatCard
-            label="Kec. Sudut (ω)"
-            value={omegaNow.toFixed(2)}
-            unit="rad/s"
-            color="emerald"
-            sublabel="Melesat naik saat tuck"
-          />
-          <StatCard
-            label="Momentum (L)"
-            value={phase === "ready" ? "0.00" : L.current.toFixed(2)}
-            unit="kg·m²/s"
-            color="sky"
-            sublabel="Kekal sepanjang terbang"
-          />
-          <StatCard
-            label="Tinggi (y)"
-            value={Math.max(flight.current.y, 0).toFixed(2)}
-            unit="m"
-            color="rose"
-            sublabel="Jarak ke permukaan air"
+        {/* Mascot (Desktop always visible) */}
+        <div className="hidden lg:block">
+          <Mascot
+            mood="amazed"
+            quote="Saat melayang di udara, gaya gravitasi bekerja tepat di pusat massa sehingga torsi luarnya NOL (τ = 0)! Momen inersia peloncat berkurang dari 11 kg·m² menjadi cuma 2.4 kg·m² saat meringkuk (tuck) — sehingga putarannya jadi super cepat!"
+            tip="Trik atlet profesional: lakukan posisi tuck rapat saat di puncak ketinggian untuk mengumpulkan putaran salto sebanyak-banyaknya, lalu buka luruskan tubuh (I membesar, putaran melambat) tepat sebelum menyentuh air agar masuk tegak lurus!"
+            mission={{
+              text: "Coba loncat, pasang tuck = 1 saat melayang, lalu buka ke 0 tepat sebelum masuk air!",
+              actionLabel: "Uji Salto Pro 🥇",
+              onAction: () => {
+                handleJump();
+                setTimeout(() => setTuck(1.0), 300);
+                setTimeout(() => setTuck(0.05), 1100);
+              },
+            }}
           />
         </div>
+      </div>
 
-        {/* Live Chart */}
-        <Panel title="Grafik Dinamika di Udara" icon="📈">
-          <LiveChart
-            series={[
-              { data: history.I, color: "#EAB308", label: "Inersia I", unit: "kg·m²" },
-              { data: history.omega, color: "#16A34A", label: "Kec. Sudut ω", unit: "rad/s" },
-            ]}
-          />
-        </Panel>
+      {/* Control & Telemetry (Mobile Tabbed, Desktop Multi-Column) */}
+      <div className="lg:col-span-4 space-y-3">
+        {/* Mobile Segmented Switcher */}
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setMobileTab("controls")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "controls"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🎛️ Kontrol
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("stats")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "stats"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📊 Data & Grafik
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("theory")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "theory"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🦉 Tips & Rumus
+          </button>
+        </div>
 
-        {/* Formula */}
-        <Panel title="Kekekalan Momentum Bebas Torsi" icon="📘">
-          <div className="space-y-3">
-            <FBlock
-              tex="\Sigma\tau_{\text{luar}} = 0 \;\Rightarrow\; I_1\omega_1 = I_2\omega_2 = \text{konstan}"
-              label="Di Udara Bebas"
-              explanation="Gravitasi bekerja tepat di pusat massa sehingga tidak ada torsi pemuntir terhadap pusat massa atlet."
+        {/* Section 1: Controls */}
+        <div className={`${mobileTab === "controls" ? "block" : "hidden"} lg:block space-y-3`}>
+          <Panel title="Parameter Loncatan" icon="🤸">
+            <div className="space-y-3">
+              <Slider
+                label="Bentuk Tubuh (Tuck / Meringkuk)"
+                value={tuck}
+                min={0}
+                max={1}
+                step={0.01}
+                precision={2}
+                accent="green"
+                onChange={setTuck}
+                hint="0 = Lurus (I besar) · 1 = Meringkuk bulat (I kecil)"
+                quickPicks={[
+                  { label: "Lurus (0.05)", val: 0.05 },
+                  { label: "Pike (0.5)", val: 0.5 },
+                  { label: "Tuck (0.95)", val: 0.95 },
+                ]}
+              />
+              <Slider
+                label="Tolakan Vertikal (v₀y)"
+                value={jumpPower}
+                min={1.5}
+                max={5.5}
+                step={0.1}
+                unit="m/s"
+                accent="sky"
+                disabled={phase !== "ready"}
+                onChange={setJumpPower}
+              />
+              <Slider
+                label="Putaran Awal Salto (ω₀)"
+                value={omega0}
+                min={1.0}
+                max={6.0}
+                step={0.2}
+                unit="rad/s"
+                accent="purple"
+                disabled={phase !== "ready"}
+                onChange={setOmega0}
+              />
+            </div>
+          </Panel>
+
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard
+              label="Inersia Tubuh (I)"
+              value={I.toFixed(2)}
+              unit="kg·m²"
+              color="amber"
+              sublabel="Turun saat meringkuk"
+            />
+            <StatCard
+              label="Kec. Sudut (ω)"
+              value={omegaNow.toFixed(2)}
+              unit="rad/s"
+              color="emerald"
+              sublabel="Melesat naik saat tuck"
+            />
+            <StatCard
+              label="Momentum (L)"
+              value={phase === "ready" ? "0.00" : L.current.toFixed(2)}
+              unit="kg·m²/s"
+              color="sky"
+              sublabel="Kekal sepanjang terbang"
+            />
+            <StatCard
+              label="Tinggi (y)"
+              value={Math.max(flight.current.y, 0).toFixed(2)}
+              unit="m"
+              color="rose"
+              sublabel="Jarak ke air"
             />
           </div>
-        </Panel>
+        </div>
+
+        {/* Section 2: Stats & Charts */}
+        <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
+          <Panel title="Grafik Dinamika di Udara" icon="📈">
+            <LiveChart
+              series={[
+                { data: history.I, color: "#EAB308", label: "Inersia I", unit: "kg·m²" },
+                { data: history.omega, color: "#16A34A", label: "Kec. Sudut ω", unit: "rad/s" },
+              ]}
+              height={95}
+            />
+          </Panel>
+        </div>
+
+        {/* Section 3: Theory & Mascot */}
+        <div className={`${mobileTab === "theory" ? "block" : "hidden"} lg:block space-y-3`}>
+          <div className="lg:hidden">
+            <Mascot
+              mood="amazed"
+              quote="Saat melayang di udara, gaya gravitasi bekerja tepat di pusat massa sehingga torsi luarnya NOL (τ = 0)! Momen inersia peloncat berkurang saat meringkuk (tuck) — sehingga putarannya jadi super cepat!"
+              tip="Luruskan tubuh tepat sebelum menyentuh air agar masuk tegak lurus!"
+            />
+          </div>
+
+          <Panel title="Kekekalan Momentum Bebas Torsi" icon="📘">
+            <div className="space-y-2 text-xs">
+              <FBlock
+                tex="\Sigma\tau_{\text{luar}} = 0 \;\Rightarrow\; I_1\omega_1 = I_2\omega_2 = \text{konstan}"
+                label="Di Udara Bebas"
+                explanation="Gravitasi bekerja tepat di pusat massa sehingga tidak ada torsi pemuntir terhadap pusat massa atlet."
+              />
+            </div>
+          </Panel>
+        </div>
       </div>
     </div>
   );

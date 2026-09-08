@@ -190,6 +190,7 @@ export default function KeplerModule() {
   const [speedMul, setSpeedMul] = useState<number>(1);
   const [running, setRunning] = useState<boolean>(true);
   const [showSectors, setShowSectors] = useState<boolean>(true);
+  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
 
   const vCirc = Math.sqrt(GM / R0);
   const state = useRef<OrbitState>({
@@ -330,111 +331,166 @@ export default function KeplerModule() {
           </div>
         </div>
 
-        {/* Mascot */}
-        <Mascot
-          mood="thinking"
-          quote="Gaya gravitasi Matahari mengarah lurus ke pusat (segaris dengan vektor posisi r), sehingga torsi terhadap Matahari adalah NOL (τ = r × F = 0)! Momentum sudut orbital planet L = m·r·v selalu KEKAL abadi!"
-          tip="Inilah bukti rahasia Hukum II Kepler: karena L konstan, maka laju sapuan luas dA/dt = L/(2m) juga konstan! Juring yang disapu dalam selang waktu yang sama selalu memiliki luas yang sama!"
-          mission={{
-            text: "Ubah orbit menjadi elips lonjong (kecepatan = 0.7) untuk melihat lonjakan kelajuan di perihelion!",
-            actionLabel: "Set Elips Lonjong 🛸",
-            onAction: () => {
-              setSpeedFactor(0.7);
-              resetOrbit(0.7);
-            },
-          }}
-        />
-      </div>
-
-      {/* Control & Telemetry */}
-      <div className="lg:col-span-4 space-y-4">
-        <Panel title="Parameter Orbit Kepler" icon="🪐">
-          <div className="space-y-4">
-            <Slider
-              label="Kecepatan Awal Relatif (v₀ / v_lingkaran)"
-              value={speedFactor}
-              min={0.6}
-              max={1.3}
-              step={0.02}
-              precision={2}
-              accent="green"
-              onChange={(v) => {
-                setSpeedFactor(v);
-                resetOrbit(v);
-              }}
-              hint="1.00 = Lingkaran · < 1.00 = Elips (titik awal aphelion)"
-              quickPicks={[
-                { label: "Elips (0.75)", val: 0.75 },
-                { label: "Lingkaran (1.0)", val: 1.0 },
-                { label: "Elips Cepat (1.2)", val: 1.2 },
-              ]}
-            />
-            <Slider
-              label="Kecepatan Simulasi Waktu"
-              value={speedMul}
-              min={0.2}
-              max={2.5}
-              step={0.1}
-              unit="×"
-              accent="sky"
-              onChange={setSpeedMul}
-            />
-          </div>
-        </Panel>
-
-        {/* Telemetry */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            label="Jarak Planet (r)"
-            value={r.toFixed(2)}
-            unit="AU"
-            color="amber"
-            sublabel="Jarak ke Matahari"
-          />
-          <StatCard
-            label="Kelajuan Orbital (v)"
-            value={speed.toFixed(2)}
-            unit="AU/s"
-            color="emerald"
-            sublabel="Ngebut di perihelion"
-          />
-          <StatCard
-            label="Momentum Sudut (L)"
-            value={L.toFixed(3)}
-            unit="AU²/s"
-            color="sky"
-            sublabel="L = r × v (100% Kekal)"
-          />
-          <StatCard
-            label="Torsi Gravitasi (τ)"
-            value="0.000"
-            unit="N·m"
-            color="rose"
-            sublabel="τ = r × F_sentral = 0"
+        {/* Mascot (Desktop always visible) */}
+        <div className="hidden lg:block">
+          <Mascot
+            mood="thinking"
+            quote="Gaya gravitasi Matahari mengarah lurus ke pusat (segaris dengan vektor posisi r), sehingga torsi terhadap Matahari adalah NOL (τ = r × F = 0)! Momentum sudut orbital planet L = m·r·v selalu KEKAL abadi!"
+            tip="Inilah bukti rahasia Hukum II Kepler: karena L konstan, maka laju sapuan luas dA/dt = L/(2m) juga konstan! Juring yang disapu dalam selang waktu yang sama selalu memiliki luas yang sama!"
+            mission={{
+              text: "Ubah orbit menjadi elips lonjong (kecepatan = 0.75) untuk melihat lonjakan kelajuan di perihelion!",
+              actionLabel: "Set Elips Lonjong 🛸",
+              onAction: () => {
+                setSpeedFactor(0.75);
+                resetOrbit(0.75);
+              },
+            }}
           />
         </div>
+      </div>
 
-        {/* Live Chart */}
-        <Panel title="Grafik Real-time (L Konstan)" icon="📈">
-          <LiveChart
-            series={[
-              { data: history.L, color: "#0284C7", label: "L (Kekal)", unit: "AU²/s" },
-              { data: history.speed, color: "#16A34A", label: "Kelajuan v", unit: "AU/s" },
-              { data: history.r, color: "#F59E0B", label: "Jarak r", unit: "AU" },
-            ]}
-          />
-        </Panel>
+      {/* Control & Telemetry (Mobile Tabbed, Desktop Multi-Column) */}
+      <div className="lg:col-span-4 space-y-3">
+        {/* Mobile Segmented Switcher */}
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setMobileTab("controls")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "controls"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🎛️ Kontrol
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("stats")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "stats"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📊 Data & Grafik
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("theory")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "theory"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🦉 Tips & Rumus
+          </button>
+        </div>
 
-        {/* Formula */}
-        <Panel title="Hukum II Kepler" icon="📘">
-          <div className="space-y-3">
-            <FBlock
-              tex="\dfrac{dA}{dt} = \dfrac{L}{2m} = \text{konstan}"
-              label="Kecepatan Luasan"
-              explanation="Garis khayal yang menghubungkan planet ke Matahari menyapu luas yang sama dalam selang waktu yang sama."
+        {/* Section 1: Controls */}
+        <div className={`${mobileTab === "controls" ? "block" : "hidden"} lg:block space-y-3`}>
+          <Panel title="Parameter Orbit Kepler" icon="🪐">
+            <div className="space-y-3">
+              <Slider
+                label="Bentuk Orbit (v₀ / v_lingkaran)"
+                value={speedFactor}
+                min={0.6}
+                max={1.3}
+                step={0.02}
+                precision={2}
+                accent="green"
+                onChange={(v) => {
+                  setSpeedFactor(v);
+                  resetOrbit(v);
+                }}
+                hint="1.00 = Lingkaran · < 1.00 = Elips"
+                quickPicks={[
+                  { label: "Elips (0.75)", val: 0.75 },
+                  { label: "Lingkaran (1.0)", val: 1.0 },
+                  { label: "Elips Cepat (1.2)", val: 1.2 },
+                ]}
+              />
+              <Slider
+                label="Kecepatan Simulasi Waktu"
+                value={speedMul}
+                min={0.2}
+                max={2.5}
+                step={0.1}
+                unit="×"
+                accent="sky"
+                onChange={setSpeedMul}
+              />
+            </div>
+          </Panel>
+
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard
+              label="Jarak (r)"
+              value={r.toFixed(2)}
+              unit="AU"
+              color="amber"
+              sublabel="Jarak ke Matahari"
+            />
+            <StatCard
+              label="Kelajuan (v)"
+              value={speed.toFixed(2)}
+              unit="AU/s"
+              color="emerald"
+              sublabel="Cepat di perihelion"
+            />
+            <StatCard
+              label="Momentum (L)"
+              value={L.toFixed(3)}
+              unit="AU²/s"
+              color="sky"
+              sublabel="100% Kekal"
+            />
+            <StatCard
+              label="Torsi (τ)"
+              value="0.000"
+              unit="N·m"
+              color="rose"
+              sublabel="Gaya Sentral = 0"
             />
           </div>
-        </Panel>
+        </div>
+
+        {/* Section 2: Stats & Charts */}
+        <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
+          <Panel title="Grafik Real-time (L Konstan)" icon="📈">
+            <LiveChart
+              series={[
+                { data: history.L, color: "#0284C7", label: "L (Kekal)", unit: "AU²/s" },
+                { data: history.speed, color: "#16A34A", label: "Kelajuan v", unit: "AU/s" },
+                { data: history.r, color: "#F59E0B", label: "Jarak r", unit: "AU" },
+              ]}
+              height={95}
+            />
+          </Panel>
+        </div>
+
+        {/* Section 3: Theory & Mascot */}
+        <div className={`${mobileTab === "theory" ? "block" : "hidden"} lg:block space-y-3`}>
+          <div className="lg:hidden">
+            <Mascot
+              mood="thinking"
+              quote="Gaya gravitasi Matahari mengarah lurus ke pusat (segaris dengan vektor posisi r), sehingga torsi terhadap Matahari adalah NOL (τ = 0)! Momentum sudut orbital planet L selalu KEKAL!"
+              tip="Luas juring yang disapu dalam selang waktu yang sama selalu memiliki luas yang sama!"
+            />
+          </div>
+
+          <Panel title="Hukum II Kepler" icon="📘">
+            <div className="space-y-2 text-xs">
+              <FBlock
+                tex="\dfrac{dA}{dt} = \dfrac{L}{2m} = \text{konstan}"
+                label="Kecepatan Luasan"
+                explanation="Garis khayal yang menghubungkan planet ke Matahari menyapu luas yang sama dalam selang waktu yang sama."
+              />
+            </div>
+          </Panel>
+        </div>
       </div>
     </div>
   );

@@ -324,6 +324,7 @@ export default function GyroscopeModule() {
   const [tiltAngle, setTiltAngle] = useState<number>(0); // 0 = UP, 90 = Horiz, 180 = DOWN
   const [wheelMass, setWheelMass] = useState<number>(3.0); // kg
   const [wheelRadius] = useState<number>(0.35); // m
+  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
 
   const spinAngleRef = useRef(0);
   const chairAngleRef = useRef(0);
@@ -438,168 +439,215 @@ export default function GyroscopeModule() {
           </div>
         </div>
 
-        {/* Mascot Explainer */}
-        <Mascot
-          mood="spinning"
-          quote={
-            mode === "chair"
-              ? "Coba balikkan roda 180° ke bawah! Kursimu tiba-tiba berputar searah jarum jam dengan cepat! Kenapa? Karena momentum sudut total vertikal harus tetap kekal!"
-              : "Ajaib kan? Roda yang berputar kencang tidak jatuh ke bawah meskipun cuma digantung tali di satu ujung! Gravitasi malah membuatnya berpresesi memutar secara horizontal!"
-          }
-          tip={
-            mode === "chair"
-              ? "Ketika roda dibalik dari +L menjadi -L, kursi harus berputar dengan momentum +2L agar jumlah akhirnya tetap sama dengan kondisi awal (+L)."
-              : "Semakin kencang kamu memutar roda sepeda (ω besar), gerakan presesinya justru semakin lambat! (Ω_p = τ / L)."
-          }
-          mission={
-            mode === "chair"
-              ? {
-                  text: "Balikkan orientasi roda hingga 180° (menghadap ke bawah)!",
-                  actionLabel: "Balik 180° Sekarang 🔄",
-                  onAction: () => setTiltAngle(180),
-                }
-              : {
-                  text: "Percepat putaran roda sepeda hingga 45 rad/s!",
-                  actionLabel: "Gas 45 rad/s 🚀",
-                  onAction: () => setWheelSpin(45),
-                }
-          }
-        />
+        {/* Mascot Explainer (Desktop always visible) */}
+        <div className="hidden lg:block">
+          <Mascot
+            mood="spinning"
+            quote={
+              mode === "chair"
+                ? "Coba balikkan roda 180° ke bawah! Kursimu tiba-tiba berputar searah jarum jam dengan cepat! Kenapa? Karena momentum sudut total vertikal harus tetap kekal!"
+                : "Ajaib kan? Roda yang berputar kencang tidak jatuh ke bawah meskipun cuma digantung tali di satu ujung! Gravitasi malah membuatnya berpresesi memutar secara horizontal!"
+            }
+            tip={
+              mode === "chair"
+                ? "Ketika roda dibalik dari +L menjadi -L, kursi harus berputar dengan momentum +2L agar jumlah akhirnya tetap sama dengan kondisi awal (+L)."
+                : "Semakin kencang kamu memutar roda sepeda (ω besar), gerakan presesinya justru semakin lambat! (Ω_p = τ / L)."
+            }
+            mission={
+              mode === "chair"
+                ? {
+                    text: "Balikkan orientasi roda hingga 180° (menghadap ke bawah)!",
+                    actionLabel: "Balik 180° Sekarang 🔄",
+                    onAction: () => setTiltAngle(180),
+                  }
+                : {
+                    text: "Percepat putaran roda sepeda hingga 45 rad/s!",
+                    actionLabel: "Gas 45 rad/s 🚀",
+                    onAction: () => setWheelSpin(45),
+                  }
+            }
+          />
+        </div>
       </div>
 
-      {/* Control & Telemetry Panel */}
-      <div className="lg:col-span-4 space-y-4">
-        <Panel
-          title="Kontrol Eksperimen"
-          icon="🎛️"
-          badge={mode === "chair" ? "Modus Kursi" : "Modus Presesi"}
-        >
-          <div className="space-y-4">
-            {mode === "chair" ? (
-              <>
-                <Slider
-                  label="Kemiringan Roda (Tilt Angle)"
-                  value={tiltAngle}
-                  min={0}
-                  max={180}
-                  step={5}
-                  unit="°"
-                  accent="sky"
-                  onChange={setTiltAngle}
-                  hint="0° = Menghadap atas, 90° = Horisontal, 180° = Menghadap bawah"
-                  quickPicks={[
-                    { label: "0° (Tegak)", val: 0 },
-                    { label: "90° (Miring)", val: 90 },
-                    { label: "180° (Terbalik)", val: 180 },
-                  ]}
-                />
-                <Slider
-                  label="Kecepatan Putar Roda (ω_roda)"
-                  value={wheelSpin}
-                  min={0}
-                  max={50}
-                  step={2}
-                  unit="rad/s"
-                  accent="amber"
-                  onChange={setWheelSpin}
-                  hint="Kecepatan putaran roda sepeda pada porosnya"
-                />
-              </>
-            ) : (
-              <>
-                <Slider
-                  label="Kecepatan Spin Roda (ω_spin)"
-                  value={wheelSpin}
-                  min={5}
-                  max={60}
-                  step={2}
-                  unit="rad/s"
-                  accent="green"
-                  onChange={setWheelSpin}
-                  hint="Semakin cepat putaran roda, presesi semakin lambat & stabil"
-                  quickPicks={[
-                    { label: "Pelan (10 rad/s)", val: 10 },
-                    { label: "Sedang (30 rad/s)", val: 30 },
-                    { label: "Super Cepat (55 rad/s)", val: 55 },
-                  ]}
-                />
-                <Slider
-                  label="Massa Roda Sepeda (m)"
-                  value={wheelMass}
-                  min={1.5}
-                  max={6.0}
-                  step={0.5}
-                  unit="kg"
-                  accent="rose"
-                  onChange={setWheelMass}
-                  hint="Massa pelek dan ban karet sepeda"
-                />
-              </>
-            )}
-          </div>
-        </Panel>
-
-        {/* Live Physics Telemetry Cards */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            label="L Roda Sepeda"
-            value={L_wheel.toFixed(2)}
-            unit="kg·m²/s"
-            color="amber"
-            sublabel="L = I_roda · ω"
-          />
-          {mode === "chair" ? (
-            <StatCard
-              label="Kecepatan Kursi"
-              value={chairOmega.toFixed(2)}
-              unit="rad/s"
-              color="purple"
-              sublabel="Dihasilkan dari balikan roda"
-            />
-          ) : (
-            <StatCard
-              label="Laju Presesi Ω_p"
-              value={precessOmega.toFixed(2)}
-              unit="rad/s"
-              color="sky"
-              sublabel="Ω = τ / L_roda"
-            />
-          )}
+      {/* Control & Telemetry Panel (Mobile Tabbed, Desktop Multi-Column) */}
+      <div className="lg:col-span-4 space-y-3">
+        {/* Mobile Segmented Switcher */}
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setMobileTab("controls")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "controls"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🎛️ Kontrol
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("stats")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "stats"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📊 Data & Vektor
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("theory")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "theory"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🦉 Tips & Rumus
+          </button>
         </div>
 
-        {/* Formula breakdown */}
-        <Panel title="Penjelasan Rumus & Analisis" icon="📐">
-          {mode === "chair" ? (
+        {/* Section 1: Controls */}
+        <div className={`${mobileTab === "controls" ? "block" : "hidden"} lg:block space-y-3`}>
+          <Panel
+            title="Kontrol Eksperimen"
+            icon="🎛️"
+            badge={mode === "chair" ? "Modus Kursi" : "Modus Presesi"}
+          >
             <div className="space-y-3">
-              <FBlock
-                tex="L_{\text{total}, y} = L_{\text{kursi}} + L_{\text{roda}}\cos\theta = \text{konstan}"
-                label="Kekekalan L Vertikal"
-                explanation="Karena tidak ada torsi luar pada sumbu vertikal, total L vertikal selalu sama dengan kondisi mula-mula."
+              {mode === "chair" ? (
+                <>
+                  <Slider
+                    label="Kemiringan Roda (Tilt Angle)"
+                    value={tiltAngle}
+                    min={0}
+                    max={180}
+                    step={5}
+                    unit="°"
+                    accent="sky"
+                    onChange={setTiltAngle}
+                    hint="0° = Atas · 90° = Horisontal · 180° = Bawah"
+                    quickPicks={[
+                      { label: "0° (Tegak)", val: 0 },
+                      { label: "90° (Miring)", val: 90 },
+                      { label: "180° (Balik)", val: 180 },
+                    ]}
+                  />
+                  <Slider
+                    label="Kecepatan Putar Roda (ω_roda)"
+                    value={wheelSpin}
+                    min={0}
+                    max={50}
+                    step={2}
+                    unit="rad/s"
+                    accent="amber"
+                    onChange={setWheelSpin}
+                  />
+                </>
+              ) : (
+                <>
+                  <Slider
+                    label="Kecepatan Spin Roda (ω_spin)"
+                    value={wheelSpin}
+                    min={5}
+                    max={60}
+                    step={2}
+                    unit="rad/s"
+                    accent="green"
+                    onChange={setWheelSpin}
+                    hint="Makin cepat spin roda, presesi makin lambat & stabil"
+                    quickPicks={[
+                      { label: "Pelan (10)", val: 10 },
+                      { label: "Sedang (30)", val: 30 },
+                      { label: "Ngebut (55)", val: 55 },
+                    ]}
+                  />
+                  <Slider
+                    label="Massa Roda Sepeda (m)"
+                    value={wheelMass}
+                    min={1.5}
+                    max={6.0}
+                    step={0.5}
+                    unit="kg"
+                    accent="rose"
+                    onChange={setWheelMass}
+                  />
+                </>
+              )}
+            </div>
+          </Panel>
+        </div>
+
+        {/* Section 2: Stats & Telemetry */}
+        <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard
+              label="L Roda Sepeda"
+              value={L_wheel.toFixed(2)}
+              unit="kg·m²/s"
+              color="amber"
+              sublabel="L = I_roda · ω"
+            />
+            {mode === "chair" ? (
+              <StatCard
+                label="Kecepatan Kursi"
+                value={chairOmega.toFixed(2)}
+                unit="rad/s"
+                color="purple"
+                sublabel="Dihasilkan dari balikan roda"
               />
-              <div className="rounded-xl bg-[#F8FAFC] p-3 border border-[#E2E8F0] text-xs space-y-1">
-                <div className="font-bold text-slate-800">Saat θ = 180° (Roda Terbalik):</div>
-                <div>• <F tex="L_{\text{roda}, y} = -L_{\text{roda}}" /></div>
-                <div>• <F tex="L_{\text{kursi}} = +2 L_{\text{roda}}" /></div>
-                <div className="text-[#0284C7] font-semibold mt-1">
-                  Kursi dipaksa berputar 2 kali lipat momentum roda untuk menjaga keseimbangan semesta!
-                </div>
+            ) : (
+              <StatCard
+                label="Laju Presesi Ω_p"
+                value={precessOmega.toFixed(2)}
+                unit="rad/s"
+                color="sky"
+                sublabel="Ω = τ / L_roda"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Section 3: Theory & Mascot on Mobile */}
+        <div className={`${mobileTab === "theory" ? "block" : "hidden"} lg:block space-y-3`}>
+          <div className="lg:hidden">
+            <Mascot
+              mood="spinning"
+              quote={
+                mode === "chair"
+                  ? "Coba balikkan roda 180° ke bawah! Kursimu tiba-tiba berputar searah jarum jam dengan cepat! Kenapa? Karena momentum sudut total vertikal harus tetap kekal!"
+                  : "Ajaib kan? Roda yang berputar kencang tidak jatuh ke bawah meskipun cuma digantung tali di satu ujung! Gravitasi malah membuatnya berpresesi memutar secara horizontal!"
+              }
+              tip={
+                mode === "chair"
+                  ? "Ketika roda dibalik dari +L menjadi -L, kursi harus berputar dengan momentum +2L agar jumlah akhirnya tetap sama (+L)."
+                  : "Semakin kencang kamu memutar roda sepeda (ω besar), gerakan presesinya justru semakin lambat! (Ω_p = τ / L)."
+              }
+            />
+          </div>
+
+          <Panel title="Penjelasan Rumus & Analisis" icon="📐">
+            {mode === "chair" ? (
+              <div className="space-y-2 text-xs">
+                <FBlock
+                  tex="L_{\text{total}, y} = L_{\text{kursi}} + L_{\text{roda}}\cos\theta = \text{konstan}"
+                  label="Kekekalan L Vertikal"
+                  explanation="Karena tidak ada torsi luar pada sumbu vertikal, total L vertikal selalu sama dengan kondisi mula-mula."
+                />
               </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <FBlock
-                tex="\vec\tau = \vec r \times m\vec g \quad \Rightarrow \quad \vec\tau = \dfrac{d\vec L}{dt}"
-                label="Torsi Gravitasi"
-                explanation="Torsi mengarah horizontal tegak lurus L, memaksa vektor L berputar (presesi) bukan jatuh ke bawah!"
-              />
-              <FBlock
-                tex="\Omega_p = \dfrac{\tau}{L} = \dfrac{mgd}{I\omega_s}"
-                label="Kecepatan Presesi"
-                explanation="Makin cepat spin roda (ω_s tinggi), kecepatan presesi Ω_p justru makin lambat!"
-              />
-            </div>
-          )}
-        </Panel>
+            ) : (
+              <div className="space-y-2 text-xs">
+                <FBlock
+                  tex="\Omega_p = \dfrac{\tau}{L} = \dfrac{mgd}{I\omega_s}"
+                  label="Kecepatan Presesi"
+                  explanation="Makin cepat spin roda (ω_s tinggi), kecepatan presesi Ω_p justru makin lambat!"
+                />
+              </div>
+            )}
+          </Panel>
+        </div>
       </div>
     </div>
   );

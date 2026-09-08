@@ -213,6 +213,7 @@ export default function TorqueModule() {
   const [forceMag, setForceMag] = useState<number>(6);
   const [friction, setFriction] = useState<number>(0.12);
   const [forceOn, setForceOn] = useState<boolean>(false);
+  const [mobileTab, setMobileTab] = useState<"controls" | "stats" | "theory">("controls");
 
   const phys = useRef<Physics>({ theta: 0, omega: 0 });
   const [tick, setTick] = useState<number>(0);
@@ -321,135 +322,187 @@ export default function TorqueModule() {
           </div>
         </div>
 
-        {/* Mascot */}
-        <Mascot
-          mood="thinking"
-          quote="Hukum II Newton untuk rotasi berbunyi: τ = ΔL / Δt! Saat kamu menekan tombol gaya, torsi luar menghasilkan impuls sudut (ΔL = τ·Δt) yang memompa momentum sudut roda naik!"
-          tip="Ketika kamu melepaskan tombol gaya, torsi luar jadi nol (τ = 0). Lihat apa yang terjadi pada grafik: garis L langsung mendatar dan menjadi konstan! Inilah syarat terjadinya hukum kekekalan momentum sudut!"
-          mission={{
-            text: "Coba tahan dorongan selama 3 detik, lalu lepas!",
-            actionLabel: "Dorong 2 Detik ⏱️",
-            onAction: () => {
-              handleForceDown();
-              setTimeout(handleForceUp, 2000);
-            },
-          }}
-        />
-      </div>
-
-      {/* Control & Telemetry */}
-      <div className="lg:col-span-4 space-y-4">
-        <Panel title="Parameter Roda Gaya" icon="⚙️">
-          <div className="space-y-4">
-            <Slider
-              label="Massa Roda (M)"
-              value={mass}
-              min={1}
-              max={10}
-              step={0.5}
-              unit="kg"
-              accent="amber"
-              onChange={setMass}
-              hint="Massa cakram pejal"
-            />
-            <Slider
-              label="Jari-jari Roda (R)"
-              value={wheelRadius}
-              min={0.4}
-              max={1.1}
-              step={0.05}
-              unit="m"
-              accent="sky"
-              onChange={setWheelRadius}
-            />
-            <Slider
-              label="Lengan Gaya (r)"
-              value={lever}
-              min={0.3}
-              max={1.1}
-              step={0.05}
-              unit="m"
-              accent="purple"
-              onChange={setLever}
-              hint="Jarak titik dorong gaya dari pusat putaran"
-            />
-            <Slider
-              label="Besar Gaya Dorong (F)"
-              value={forceMag}
-              min={1}
-              max={15}
-              step={0.5}
-              unit="N"
-              accent="rose"
-              onChange={setForceMag}
-            />
-            <Slider
-              label="Koefisien Gesekan Poros"
-              value={friction}
-              min={0}
-              max={0.5}
-              step={0.02}
-              unit=""
-              accent="green"
-              onChange={setFriction}
-              hint="Gesekan bantalan peluru poros (0 = kondisi vakum ideal)"
-            />
-          </div>
-        </Panel>
-
-        {/* Telemetry */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            label="Momen Inersia (I)"
-            value={I.toFixed(3)}
-            unit="kg·m²"
-            color="amber"
-            sublabel="I = 1/2 M·R² (Cakram)"
-          />
-          <StatCard
-            label="Torsi Luar (τ)"
-            value={torque.toFixed(2)}
-            unit="N·m"
-            color="rose"
-            sublabel="τ = r × F"
-          />
-          <StatCard
-            label="Kecepatan Sudut (ω)"
-            value={phys.current.omega.toFixed(2)}
-            unit="rad/s"
-            color="emerald"
-            sublabel="ω = L / I"
-          />
-          <StatCard
-            label="Momentum Sudut (L)"
-            value={L.toFixed(2)}
-            unit="kg·m²/s"
-            color="purple"
-            sublabel="L = I · ω"
+        {/* Mascot (Desktop always visible) */}
+        <div className="hidden lg:block">
+          <Mascot
+            mood="thinking"
+            quote="Hukum II Newton untuk rotasi: τ = ΔL / Δt! Saat kamu menekan tombol gaya, torsi luar menghasilkan impuls sudut (ΔL = τ·Δt) yang memompa momentum sudut roda naik!"
+            tip="Ketika torsi luar nol (τ = 0), momentum sudut L berhenti naik dan nilainya kekal!"
+            mission={{
+              text: "Coba tahan dorongan selama 2 detik, lalu lepas!",
+              actionLabel: "Dorong 2 Detik ⏱️",
+              onAction: () => {
+                handleForceDown();
+                setTimeout(handleForceUp, 2000);
+              },
+            }}
           />
         </div>
+      </div>
 
-        {/* Live Chart */}
-        <Panel title="Grafik Dinamika Rotasi" icon="📈">
-          <LiveChart
-            series={[
-              { data: history.tau, color: "#FF4B4B", label: "Torsi τ", unit: "N·m" },
-              { data: history.L, color: "#9333EA", label: "Momentum L", unit: "kg·m²/s" },
-              { data: history.omega, color: "#16A34A", label: "Kec. Sudut ω", unit: "rad/s" },
-            ]}
-          />
-        </Panel>
+      {/* Control & Telemetry (Mobile Tabbed, Desktop Multi-Column) */}
+      <div className="lg:col-span-4 space-y-3">
+        {/* Mobile Segmented Switcher */}
+        <div className="flex lg:hidden rounded-xl border-2 border-[#E5E7EB] bg-white p-1 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setMobileTab("controls")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "controls"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🎛️ Kontrol
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("stats")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "stats"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            📊 Data & Grafik
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("theory")}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-heading font-bold transition ${
+              mobileTab === "theory"
+                ? "bg-[#1CB0F6] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🦉 Tips & Rumus
+          </button>
+        </div>
 
-        {/* Formula */}
-        <Panel title="Hubungan Impuls & Momentum" icon="📘">
-          <div className="space-y-3">
-            <FBlock
-              tex="\Delta L = \tau \cdot \Delta t"
-              label="Impuls Sudut"
-              explanation="Impuls sudut menghasilkan perubahan momentum sudut benda rotasi."
+        {/* Section 1: Controls */}
+        <div className={`${mobileTab === "controls" ? "block" : "hidden"} lg:block space-y-3`}>
+          <Panel title="Parameter Roda Gaya" icon="⚙️">
+            <div className="space-y-3">
+              <Slider
+                label="Massa Roda (M)"
+                value={mass}
+                min={1}
+                max={10}
+                step={0.5}
+                unit="kg"
+                accent="amber"
+                onChange={setMass}
+              />
+              <Slider
+                label="Jari-jari Roda (R)"
+                value={wheelRadius}
+                min={0.4}
+                max={1.1}
+                step={0.05}
+                unit="m"
+                accent="sky"
+                onChange={setWheelRadius}
+              />
+              <Slider
+                label="Lengan Gaya (r)"
+                value={lever}
+                min={0.3}
+                max={1.1}
+                step={0.05}
+                unit="m"
+                accent="purple"
+                onChange={setLever}
+              />
+              <Slider
+                label="Gaya Dorong (F)"
+                value={forceMag}
+                min={1}
+                max={15}
+                step={0.5}
+                unit="N"
+                accent="rose"
+                onChange={setForceMag}
+              />
+              <Slider
+                label="Gesekan Poros"
+                value={friction}
+                min={0}
+                max={0.5}
+                step={0.02}
+                unit=""
+                accent="green"
+                onChange={setFriction}
+              />
+            </div>
+          </Panel>
+
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard
+              label="Momen Inersia (I)"
+              value={I.toFixed(3)}
+              unit="kg·m²"
+              color="amber"
+              sublabel="I = 1/2 M·R²"
+            />
+            <StatCard
+              label="Torsi Luar (τ)"
+              value={torque.toFixed(2)}
+              unit="N·m"
+              color="rose"
+              sublabel="τ = r × F"
+            />
+            <StatCard
+              label="Kec. Sudut (ω)"
+              value={phys.current.omega.toFixed(2)}
+              unit="rad/s"
+              color="emerald"
+              sublabel="ω = L / I"
+            />
+            <StatCard
+              label="Momentum (L)"
+              value={L.toFixed(2)}
+              unit="kg·m²/s"
+              color="purple"
+              sublabel="L = I · ω"
             />
           </div>
-        </Panel>
+        </div>
+
+        {/* Section 2: Stats & Charts */}
+        <div className={`${mobileTab === "stats" ? "block" : "hidden"} lg:block space-y-3`}>
+          <Panel title="Grafik Dinamika Rotasi" icon="📈">
+            <LiveChart
+              series={[
+                { data: history.tau, color: "#FF4B4B", label: "Torsi τ", unit: "N·m" },
+                { data: history.L, color: "#9333EA", label: "Momentum L", unit: "kg·m²/s" },
+                { data: history.omega, color: "#16A34A", label: "Kec. Sudut ω", unit: "rad/s" },
+              ]}
+              height={95}
+            />
+          </Panel>
+        </div>
+
+        {/* Section 3: Theory & Mascot */}
+        <div className={`${mobileTab === "theory" ? "block" : "hidden"} lg:block space-y-3`}>
+          <div className="lg:hidden">
+            <Mascot
+              mood="thinking"
+              quote="Hukum II Newton untuk rotasi: τ = ΔL / Δt! Saat kamu menekan tombol gaya, torsi luar menghasilkan impuls sudut yang memompa momentum sudut roda naik!"
+              tip="Ketika torsi luar nol (τ = 0), momentum sudut L berhenti naik dan nilainya kekal!"
+            />
+          </div>
+
+          <Panel title="Hubungan Impuls & Momentum" icon="📘">
+            <div className="space-y-2 text-xs">
+              <FBlock
+                tex="\Delta L = \tau \cdot \Delta t"
+                label="Impuls Sudut"
+                explanation="Impuls sudut menghasilkan perubahan momentum sudut benda rotasi."
+              />
+            </div>
+          </Panel>
+        </div>
       </div>
     </div>
   );
