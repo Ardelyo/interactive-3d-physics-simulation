@@ -1,0 +1,224 @@
+@import "tailwindcss";
+@import "katex/dist/katex.min.css";
+
+:root {
+  color-scheme: light;
+  --font-fredoka: "Fredoka", "Nunito", sans-serif;
+  --font-nunito: "Nunito", system-ui, -apple-system, sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+* {
+  font-family: var(--font-nunito);
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: var(--font-fredoka) !important;
+}
+
+body {
+  background-color: #F7F9FC;
+  color: #2D3748;
+  overflow-x: hidden;
+}
+
+/* Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 #F1F5F9;
+}
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+*::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Duolingo Tactile 3D Buttons */
+.btn-duo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 1rem;
+  transition: all 0.08s ease-in-out;
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-fredoka);
+}
+
+.btn-duo:active:not(:disabled) {
+  transform: translateY(3px);
+}
+
+.btn-duo-green {
+  background-color: #58CC02;
+  color: #FFFFFF;
+  border-bottom: 4px solid #46A302;
+}
+.btn-duo-green:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.btn-duo-green:active:not(:disabled) {
+  border-bottom-width: 1px;
+}
+
+.btn-duo-sky {
+  background-color: #1CB0F6;
+  color: #FFFFFF;
+  border-bottom: 4px solid #1899D6;
+}
+.btn-duo-sky:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.btn-duo-sky:active:not(:disabled) {
+  border-bottom-width: 1px;
+}
+
+.btn-duo-yellow {
+  background-color: #FFC800;
+  color: #78350F;
+  border-bottom: 4px solid #E5A500;
+}
+.btn-duo-yellow:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.btn-duo-yellow:active:not(:disabled) {
+  border-bottom-width: 1px;
+}
+
+.btn-duo-coral {
+  background-color: #FF4B4B;
+  color: #FFFFFF;
+  border-bottom: 4px solid #EA2B2B;
+}
+.btn-duo-coral:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.btn-duo-coral:active:not(:disabled) {
+  border-bottom-width: 1px;
+}
+
+.btn-duo-purple {
+  background-color: #CE82FF;
+  color: #FFFFFF;
+  border-bottom: 4px solid #A559DF;
+}
+.btn-duo-purple:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.btn-duo-purple:active:not(:disabled) {
+  border-bottom-width: 1px;
+}
+
+.btn-duo-white {
+  background-color: #FFFFFF;
+  color: #4B5563;
+  border: 2px solid #E5E7EB;
+  border-bottom: 4px solid #D1D5DB;
+}
+.btn-duo-white:hover:not(:disabled) {
+  background-color: #F9FAFB;
+}
+.btn-duo-white:active:not(:disabled) {
+  border-bottom-width: 2px;
+}
+
+/* Playful Duolingo Card */
+.card-duo {
+  background-color: #FFFFFF;
+  border: 2px solid #E5E7EB;
+  box-shadow: 0 4px 0 0 #E5E7EB;
+  border-radius: 1.25rem;
+}
+
+/* Range sliders (Chunky & Tactile) */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #E2E8F0;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #FFFFFF;
+  border: 4px solid #58CC02;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+  border-color: #46A302;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #FFFFFF;
+  border: 4px solid #58CC02;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+/* KaTeX tweaks for light mode */
+.katex {
+  font-size: 1.05em;
+  color: #1E293B;
+}
+
+/* Mascot Gentle Bobbing */
+@keyframes duo-bob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+.animate-duo-bob {
+  animation: duo-bob 2.8s ease-in-out infinite;
+}
+
+/* Fade in with gentle rise */
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.animate-pop-in {
+  animation: pop-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
