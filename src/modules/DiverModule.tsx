@@ -325,10 +325,10 @@ export default function DiverModule() {
   const omegaNow = phase === "flying" ? L.current / I : phase === "entered" ? L.current / I : 0;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-      {/* 3D Viewport */}
-      <div className="lg:col-span-8 flex flex-col gap-4">
-        <div className="relative h-[420px] sm:h-[500px] w-full overflow-hidden rounded-3xl border-2 border-[#E5E7EB] bg-[#F8FAFC] shadow-[0_4px_0_0_#E5E7EB]">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5 items-start">
+      {/* 3D Viewport (Sticky on Scroll) */}
+      <div className="lg:col-span-8 flex flex-col gap-2.5 sticky top-[68px] sm:top-[74px] z-20 self-start bg-[#F7F9FC] pb-1.5">
+        <div className="relative h-[260px] sm:h-[380px] lg:h-[480px] w-full overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-[#E5E7EB] bg-[#F8FAFC] shadow-xs">
           <SceneShell
             camera={{ position: [9, boardHeight * 0.65 + 1.8, 9.5], fov: 42 }}
             groundY={-1.0}
